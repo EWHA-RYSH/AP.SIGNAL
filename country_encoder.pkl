@@ -1,0 +1,4 @@
+import pickle
+
+with open("country_encoder.pkl", "wb") as f:
+    pickle.dump(country_encoder, f)
