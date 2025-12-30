@@ -13,7 +13,7 @@ import pickle
 import os
 from streamlit.components.v1 import html
 
-# ======================================================
+
 # Page Config
 # ======================================================
 st.set_page_config(
@@ -291,3 +291,4 @@ with tab3:
         else:
             with right:
                 st.info("⬅️ 이미지를 업로드하면 예측 결과가 표시됩니다.")
+
