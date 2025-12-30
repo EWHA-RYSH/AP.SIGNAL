@@ -11,6 +11,7 @@ from torchvision import models, transforms
 from PIL import Image
 import pickle
 import os
+from streamlit.components.v1 import html
 
 # ======================================================
 # Page Config
@@ -38,6 +39,7 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
 # ======================================================
 # Load Reference Data (for ECDF)
@@ -224,35 +226,68 @@ with tab3:
 
             type_name = TYPE_DESC.get(img_type, f"Type {img_type}")
             level, badge_class = performance_level(percent)
+            
+            card_html = f"""
+            <style>
+            .result-card {{
+            background: #ffffff;
+            padding: 28px;
+            border-radius: 20px;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 24px rgba(0,0,0,0.06);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans KR", sans-serif;
+            }}
+
+            .badge-high, .badge-mid, .badge-low {{
+            display: inline-block;
+            padding: 6px 14px;
+            border-radius: 999px;
+            font-weight: 700;
+            font-size: 14px;
+            }}
+
+            .badge-high {{ background: #dcfce7; color: #166534; }}
+            .badge-mid  {{ background: #fef9c3; color: #854d0e; }}
+            .badge-low  {{ background: #fee2e2; color: #991b1b; }}
+
+            .muted {{ color:#6b7280; }}
+            .hr {{ border:none; height:1px; background:#e5e7eb; margin:18px 0; }}
+            .h1 {{ font-size: 40px; margin: 8px 0 6px; font-weight: 800; }}
+            .h2 {{ font-size: 26px; margin: 0 0 6px; font-weight: 800; }}
+            .h4 {{ font-size: 16px; margin: 14px 0 6px; font-weight: 800; }}
+            .small {{ color:#6b7280; font-size:13px; line-height:1.45; }}
+            </style>
+
+            <div class="result-card">
+            <div class="h2">🔮 예측 결과</div>
+            <div class="muted">{country} 시장 내 전체 콘텐츠 대비 예상 위치</div>
+
+            <div class="h1">{percent:.1f}%</div>
+            <span class="{badge_class}">{level}</span>
+
+            <div class="hr"></div>
+
+            <div class="h4">📌 이미지 유형</div>
+            <div><b>Type {img_type}</b> · {type_name}</div>
+
+            <div class="h4">🧠 AI 해석</div>
+            <div style="line-height:1.55;">
+                이 이미지는 <b>{country} 시장 기준</b>으로,
+                전체 콘텐츠 분포 대비 <b>{level}</b> 수준의
+                상대적 성과 위치에 해당합니다.
+            </div>
+
+            <div style="margin-top:10px;" class="small">
+                ※ 본 결과는 절대적인 반응 수치가 아닌,
+                동일 국가 내 콘텐츠 간 상대적 위치(percentile)를 의미합니다.
+            </div>
+            </div>
+            """
 
             with right:
-                st.markdown(f"""
-                <div style="background:#ffffff; padding:28px; border-radius:20px;
-                            border:1px solid #e5e7eb; box-shadow:0 10px 24px rgba(0,0,0,0.06);">
-                    <h2>🔮 예측 결과</h2>
-                    <p style="color:#6b7280;">{country} 시장 내 전체 콘텐츠 대비 예상 위치</p>
+                html(card_html, height=430)
 
-                    <h1>{percent:.1f}%</h1>
-                    <span class="{badge_class}">{level}</span>
 
-                    <hr>
-
-                    <h4>📌 이미지 유형</h4>
-                    <p><b>Type {img_type}</b> · {type_name}</p>
-
-                    <h4>🧠 AI 해석</h4>
-                    <p>
-                        이 이미지는 <b>{country} 시장 기준</b>으로,
-                        전체 콘텐츠 분포 대비 <b>{level}</b> 수준의
-                        상대적 성과 위치에 해당합니다.
-                    </p>
-
-                    <p style="color:#6b7280; font-size:13px;">
-                        ※ 본 결과는 절대적인 반응 수치가 아닌,
-                        동일 국가 내 콘텐츠 간 상대적 위치(percentile)를 의미합니다.
-                    </p>
-                </div>
-                """, unsafe_allow_html=True)
         else:
             with right:
                 st.info("⬅️ 이미지를 업로드하면 예측 결과가 표시됩니다.")
