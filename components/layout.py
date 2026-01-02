@@ -2,6 +2,11 @@ import streamlit as st
 import os
 from typing import Optional
 from utils.charts import get_country_name
+from components.design_tokens import (
+    FONT_SIZES, TEXT_COLORS, FONT_WEIGHTS, FONT_FAMILIES,
+    BG_COLORS, BORDER_COLORS, SPACING, BORDER_RADIUS, BRAND_COLORS,
+    get_text_style, get_bg_style, get_border_style
+)
 
 TYPE_DESC = {
     1: "제품 단체샷",
@@ -16,15 +21,7 @@ TYPE_DESC = {
 def render_page_header(title, country=None, n_posts=None, countries=None, selected_country=None, description=None, subtitle=None):
     st.markdown(
         f"""
-        <div class="page-title" style="
-            font-family: 'Arita-Dotum-Bold', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', sans-serif !important;
-            font-size: 1.75rem;
-            font-weight: 800 !important;
-            color: #1F2937;
-            margin-bottom: 16px;
-            line-height: 1.4;
-            letter-spacing: -0.02em;
-        ">
+        <div class="page-title" style="{get_text_style('xl', 'primary', weight='extrabold', family='bold')} font-size: 1.75rem; margin-bottom: {SPACING['lg']}; line-height: 1.4; letter-spacing: -0.02em;">
             {title}
         </div>
         """,
@@ -34,15 +31,7 @@ def render_page_header(title, country=None, n_posts=None, countries=None, select
     if description:
         st.markdown(
             f"""
-            <div class="page-description" style="
-                font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;
-                font-size: 13px;
-                color: #6B7280;
-                font-weight: 400;
-                line-height: 1.6;
-                margin-top: 0;
-                margin-bottom: 36px;
-            ">
+            <div class="page-description" style="{get_text_style('base', 'tertiary', 'normal', 'medium')} line-height: 1.6; margin-top: 0; margin-bottom: 36px;">
                 {description}
             </div>
             """,
@@ -52,11 +41,7 @@ def render_page_header(title, country=None, n_posts=None, countries=None, select
     if countries and selected_country:
         st.markdown(
             f"""
-            <div style="
-                font-size: 12px;
-                color: #6B7280;
-                margin-bottom: 10px;
-            ">
+            <div style="{get_text_style('sm', 'tertiary')} margin-bottom: 10px;">
                 분석 대상
             </div>
             """,
@@ -73,31 +58,24 @@ def render_page_header(title, country=None, n_posts=None, countries=None, select
         st.session_state.selected_country = new_country
 
 def render_kpi_card(label, value, subtext=None, highlight=False):
-    highlight_style = "border-left: 4px solid #1F5795;" if highlight else ""
-    subtext_html = f'<div class="kpi-subtext" style="font-size: 12px; color: #9CA3AF; margin-top: 4px;">{subtext}</div>' if subtext else ''
+    highlight_style = f"border-left: 4px solid {BRAND_COLORS['primary']};" if highlight else ""
+    subtext_html = f'<div class="kpi-subtext" style="{get_text_style("sm", "muted")} margin-top: {SPACING["xs"]};">{subtext}</div>' if subtext else ''
     
     st.markdown(
-        f'<div class="kpi-card-wrapper" style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-radius: 8px; padding: 20px; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {highlight_style} width: 100%; box-sizing: border-box;"><div class="kpi-label" style="font-size: 13px; color: #6B7280; margin-bottom: 8px;">{label}</div><div class="kpi-value" style="font-size: 18px; font-weight: 700; color: #1F2937;">{value}</div>{subtext_html}</div>',
+        f'<div class="kpi-card-wrapper" style="{get_bg_style("white")} {get_border_style("default")} border-radius: {BORDER_RADIUS["md"]}; padding: {SPACING["xl"]}; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {highlight_style} width: 100%; box-sizing: border-box;"><div class="kpi-label" style="{get_text_style("base", "tertiary")} margin-bottom: {SPACING["sm"]};">{label}</div><div class="kpi-value" style="{get_text_style("xl", "primary", family="bold")}">{value}</div>{subtext_html}</div>',
         unsafe_allow_html=True
     )
 
 def render_insight_box(bullets):
-    bullets_html = "".join([f"<li style='margin-bottom: 8px; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;'>{bullet}</li>" for bullet in bullets])
+    bullets_html = "".join([f"<li style='margin-bottom: {SPACING['sm']}; {get_text_style('md', 'secondary', 'normal', 'medium')}'>{bullet}</li>" for bullet in bullets])
     
     st.markdown(
         f"""
-        <div style="
-            background-color: #F9FAFB;
-            border-left: 4px solid #1F5795;
-            border-radius: 4px;
-            padding: 16px 20px;
-            margin: 20px 0;
-            font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;
-        ">
-            <div style="font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 12px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+        <div style="{get_bg_style('light')} border-left: 4px solid {BRAND_COLORS['primary']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['lg']} {SPACING['xl']}; margin: {SPACING['xl']} 0; {get_text_style('md', 'primary', 'normal', 'medium')}">
+            <div style="{get_text_style('md', 'primary', 'semibold', 'medium')} margin-bottom: {SPACING['md']};">
                 주요 인사이트
             </div>
-            <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+            <ul style="margin: 0; padding-left: {SPACING['xl']}; {get_text_style('md', 'secondary', 'normal', 'medium')} line-height: 1.6;">
                 {bullets_html}
             </ul>
         </div>
@@ -121,22 +99,22 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
     for bullet in bullets:
         # 🧠로 시작: 보조 설명 톤
         if bullet.strip().startswith("🧠"):
-            bullets_html += f'<div style="margin-bottom: 10px; font-family: Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif !important; color: #111827; font-size: 14px; line-height: 1.6;">{bullet}</div>'
+            bullets_html += f'<div style="margin-bottom: {SPACING["lg"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
         # 📍로 시작: 결론
         elif bullet.strip().startswith("📍"):
-            bullets_html += f'<div style="margin-bottom: 12px; font-family: Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif !important; color: #111827; font-size: 14px; line-height: 1.6;">{bullet}</div>'
+            bullets_html += f'<div style="margin-bottom: {SPACING["md"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
         # 기타: 기본 스타일
         else:
-            bullets_html += f'<div style="margin-bottom: 8px; font-family: Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif !important; color: #374151; font-size: 14px; line-height: 1.6;">{bullet}</div>'
+            bullets_html += f'<div style="margin-bottom: {SPACING["sm"]}; {get_text_style("md", "secondary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
     
     title_html = ""
     if title:
-        title_html = f'<div style="font-size: 18px; font-weight: 700; color: #1F2937; margin-bottom: 16px; font-family: Arita-Dotum-Bold, Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif !important;">{title}</div>'
+        title_html = f'<div style="{get_text_style("xl", "primary", family="bold")} margin-bottom: {SPACING["lg"]};">{title}</div>'
     
     # HTML 구성 (왼쪽 라인: 연한 회색, 두께 2px)
-    html_content = f'''<div style="background-color: #FFFFFF; border: 1px solid #E5E7EB; border-left: 2px solid #D1D5DB; border-radius: 4px; padding: 20px 24px; margin: 20px 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); font-family: Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif !important;">
+    html_content = f'''<div style="{get_bg_style("white")} {get_border_style("default")} border-left: 2px solid {BORDER_COLORS["light"]}; border-radius: {BORDER_RADIUS["sm"]}; padding: {SPACING["xl"]} {SPACING["2xl"]}; margin: {SPACING["xl"]} 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {get_text_style("md", "primary", "normal", "medium")}">
 {title_html}
-<div style="margin: 0; font-family: Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif !important;">
+<div style="margin: 0; {get_text_style("md", "primary", "normal", "medium")}">
 {bullets_html}
 </div>
 </div>'''
@@ -150,24 +128,17 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
 
 def render_action_items(items):
     items_html = "".join([
-        f"<li style='margin-bottom: 12px; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;'><strong style='font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;'>{item['action']}:</strong> {item['reason']}</li>"
+        f"<li style='margin-bottom: {SPACING['md']}; {get_text_style('md', 'secondary', 'normal', 'medium')}'><strong style='{get_text_style('md', 'secondary', 'normal', 'medium')}'>{item['action']}:</strong> {item['reason']}</li>"
         for item in items
     ])
     
     st.markdown(
         f"""
-        <div style="
-            background-color: #F9FAFB;
-            border-left: 4px solid #1F5795;
-            border-radius: 4px;
-            padding: 16px 20px;
-            margin: 20px 0;
-            font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;
-        ">
-            <div style="font-size: 14px; font-weight: 600; color: #1F2937; margin-bottom: 12px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+        <div style="{get_bg_style('light')} border-left: 4px solid {BRAND_COLORS['primary']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['lg']} {SPACING['xl']}; margin: {SPACING['xl']} 0; {get_text_style('md', 'primary', 'normal', 'medium')}">
+            <div style="{get_text_style('md', 'primary', 'semibold', 'medium')} margin-bottom: {SPACING['md']};">
                 권장 조치사항
             </div>
-            <ul style="margin: 0; padding-left: 20px; color: #374151; font-size: 14px; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+            <ul style="margin: 0; padding-left: {SPACING['xl']}; {get_text_style('md', 'secondary', 'normal', 'medium')} line-height: 1.6;">
                 {items_html}
             </ul>
         </div>
@@ -212,7 +183,7 @@ def render_image_type_guide():
         if b64_img:
             img_tag = f'<img src="data:image/jpeg;base64,{b64_img}" alt="Type {type_num}" style="width: 100%; height: 100%; object-fit: cover; display: block;" />'
         else:
-            img_tag = '<div style="display: flex; align-items: center; justify-content: center; height: 100%; color: #9CA3AF; font-size: 12px;">이미지 없음</div>'
+            img_tag = f'<div style="display: flex; align-items: center; justify-content: center; height: 100%; {get_text_style('sm', 'muted')}">이미지 없음</div>'
         
         cards_html += f'<div class="type-card"><div class="type-card-header"><span class="type-chip">Type {type_num}</span><span class="type-title">{type_name}</span></div><div class="type-image-wrapper">{img_tag}</div><div class="type-description">{type_desc}</div></div>'
     

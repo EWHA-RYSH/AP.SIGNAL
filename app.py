@@ -1,6 +1,7 @@
 import streamlit as st
 
 from components.style import apply_custom_style
+from components.design_tokens import get_text_style, FONT_SIZES, TEXT_COLORS, SPACING
 from utils.data_loader import load_reference_df, load_meta_df, get_countries
 from tabs.tab1_usage import render as render_tab1
 from tabs.tab2_performance import render as render_tab2
@@ -20,9 +21,9 @@ countries = get_countries(df_meta)
 
 with st.sidebar:
     st.markdown(
-        """
-        <div class="sidebar-title" style="padding: 20px 0 20px 12px;">
-            <div class="sidebar-title-text" style="font-family: 'Arita-Dotum-Bold', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', sans-serif !important; font-size: 28px; font-weight: 700; color: #FFFFFF;">
+        f"""
+        <div class="sidebar-title" style="padding: {SPACING['xl']} 0 {SPACING['xl']} 12px;">
+            <div class="sidebar-title-text" style="{get_text_style('4xl', 'white', family='bold')}">
                 AP.SIGNAL
             </div>
         </div>

@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 
 from utils.data_loader import load_meta_df
+from components.design_tokens import get_text_style, TEXT_COLORS, FONT_SIZES, SPACING
 from utils.eda_metrics import preprocess_country_data, get_image_type_distribution
 from utils.metrics import compute_usage_kpis, format_percentage, format_engagement_rate
 from utils.charts import plot_usage_distribution, plot_engagement_distribution
@@ -15,7 +16,6 @@ from components.layout import (
     render_image_type_guide,
     section_gap
 )
-from components.style import segmented_radio_style
 
 def render():
     # JSON 인사이트 로드
@@ -52,13 +52,8 @@ def render():
     section_gap(16)
     with st.expander("📁 이미지 유형 기준", expanded=False):
         st.markdown(
-            """
-            <div style="
-                font-size: 14px;
-                color: #6B7280;
-                line-height: 1.6;
-                margin-bottom: 20px;
-            ">
+            f"""
+            <div style="{get_text_style('md', 'tertiary')} line-height: 1.6; margin-bottom: {SPACING['xl']};">
                 Type 1~6은 게시물의 이미지 구성 방식이며, KPI 해석/성과 비교의 기준으로 사용됩니다.<br>
             </div>
             """,
@@ -66,57 +61,37 @@ def render():
         )
         render_image_type_guide()
     
-    section_gap(48)
-    
-    kpis = compute_usage_kpis(df_country)
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        most_used_name = get_type_name(kpis['most_used']['type'])
-        render_kpi_card(
-            "가장 많이 사용된 타입",
-            f"{most_used_name}",
-            subtext=f"Type {kpis['most_used']['type']} · 전체의 {format_percentage(kpis['most_used']['pct'])}",
-            highlight=True
-        )
-    
-    with col2:
-        least_used_name = get_type_name(kpis['least_used']['type'])
-        render_kpi_card(
-            "가장 적게 사용된 타입",
-            f"{least_used_name}",
-            subtext=f"Type {kpis['least_used']['type']} · 전체의 {format_percentage(kpis['least_used']['pct'])}"
-        )
-    
-    with col3:
-        if kpis['engagement_leader']['type']:
-            leader_name = get_type_name(kpis['engagement_leader']['type'])
-            render_kpi_card(
-                "참여율 최고 타입",
-                f"{leader_name}",
-                subtext=f"Type {kpis['engagement_leader']['type']} · 참여율: {format_engagement_rate(kpis['engagement_leader']['value'])}"
-            )
-        else:
-            render_kpi_card("참여율 최고 타입", "N/A")
-    
-    section_gap(32)
-    
-    # 중분류 선택 (세그먼트 탭 스타일)
-    segmented_radio_style()
-    view = st.radio(
-        "중분류",
-        ["활용 분포", "참여율 분포"],
-        horizontal=True,
-        key="tab1_view"
-    )
-    
     section_gap(24)
     
     type_count, type_ratio = get_image_type_distribution(df_country)
+    kpis = compute_usage_kpis(df_country)
     
-    # 조건부 렌더링: 활용 분포
-    if view == "활용 분포":
+    # 중분류 탭
+    usage_tab, engage_tab = st.tabs(["활용 분포", "참여율 분포"])
+    
+    with usage_tab:
+        # 활용 분포 관련 KPI 카드
+        col1, col2 = st.columns(2)
+        
+        with col1:
+            most_used_name = get_type_name(kpis['most_used']['type'])
+            render_kpi_card(
+                "가장 많이 사용된 타입",
+                f"{most_used_name}",
+                subtext=f"Type {kpis['most_used']['type']} · 전체의 {format_percentage(kpis['most_used']['pct'])}",
+                highlight=True
+            )
+        
+        with col2:
+            least_used_name = get_type_name(kpis['least_used']['type'])
+            render_kpi_card(
+                "가장 적게 사용된 타입",
+                f"{least_used_name}",
+                subtext=f"Type {kpis['least_used']['type']} · 전체의 {format_percentage(kpis['least_used']['pct'])}"
+            )
+        
+        section_gap(32)
+        
         st.markdown(
             """
             <div class="section">
@@ -136,8 +111,21 @@ def render():
             section_gap(24)
             render_insight_bullets(usage_bullets, title="국가별 인사이트")
     
-    # 조건부 렌더링: 참여율 분포
-    elif view == "참여율 분포":
+    with engage_tab:
+        # 참여율 분포 관련 KPI 카드
+        if kpis['engagement_leader']['type']:
+            leader_name = get_type_name(kpis['engagement_leader']['type'])
+            render_kpi_card(
+                "참여율 최고 타입",
+                f"{leader_name}",
+                subtext=f"Type {kpis['engagement_leader']['type']} · 참여율: {format_engagement_rate(kpis['engagement_leader']['value'])}",
+                highlight=True
+            )
+        else:
+            render_kpi_card("참여율 최고 타입", "N/A", highlight=True)
+        
+        section_gap(32)
+        
         st.markdown(
             """
             <div class="section">
@@ -162,13 +150,7 @@ def render():
     with st.expander("상세 통계 보기", expanded=False):
         st.markdown(
             """
-            <div style="
-                font-size: 13px;
-                color: #6B7280;
-                line-height: 1.6;
-                margin-bottom: 20px;
-                font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;
-            ">
+            <div style="{get_text_style('base', 'tertiary')} line-height: 1.6; margin-bottom: {SPACING['xl']};">
                 타입별 기본 통계를 요약합니다.
             </div>
             """,

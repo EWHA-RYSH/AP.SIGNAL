@@ -813,6 +813,46 @@ def inject_style():
                 grid-template-columns: 1fr;
             }}
         }}
+        
+        /* 탭 스타일 - primary 색상으로 변경 */
+        button[data-baseweb="tab"],
+        .stTabs button[data-baseweb="tab"],
+        div[data-baseweb="tab-list"] button {{
+            color: #6B7280 !important;
+            font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;
+            font-size: 14px !important;
+            padding: 12px 20px !important;
+            border-bottom: 2px solid transparent !important;
+            transition: all 0.2s ease !important;
+        }}
+        
+        button[data-baseweb="tab"]:hover,
+        .stTabs button[data-baseweb="tab"]:hover,
+        div[data-baseweb="tab-list"] button:hover {{
+            color: {BRAND_COLORS['primary']} !important;
+            background-color: rgba(31, 87, 149, 0.05) !important;
+        }}
+        
+        button[data-baseweb="tab"][aria-selected="true"],
+        .stTabs button[data-baseweb="tab"][aria-selected="true"],
+        div[data-baseweb="tab-list"] button[aria-selected="true"] {{
+            color: {BRAND_COLORS['primary']} !important;
+            border-bottom-color: {BRAND_COLORS['primary']} !important;
+            font-weight: 600 !important;
+            font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;
+        }}
+        
+        /* 탭 인디케이터 바 색상 변경 */
+        div[data-baseweb="tab-list"]::after,
+        .stTabs div[data-baseweb="tab-list"]::after {{
+            background-color: {BRAND_COLORS['primary']} !important;
+        }}
+        
+        /* Streamlit 탭 하단 인디케이터 라인 */
+        .stTabs [data-baseweb="tab-list"]::after,
+        [data-baseweb="tab-list"]::after {{
+            background-color: {BRAND_COLORS['primary']} !important;
+        }}
         </style>
         """,
         unsafe_allow_html=True

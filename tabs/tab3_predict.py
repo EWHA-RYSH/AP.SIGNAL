@@ -6,6 +6,10 @@ from PIL import Image
 from models.cv_model import load_model_bundle, get_image_transform, TYPE_DESC
 from utils.eda_metrics import get_country_ecdf_percentile, performance_level
 from components.layout import render_page_header, get_type_name
+from components.design_tokens import (
+    get_text_style, get_bg_style, get_border_style,
+    TEXT_COLORS, FONT_SIZES, SPACING, BORDER_RADIUS, BRAND_COLORS
+)
 
 def render(df_ref):
     model, country_encoder, mu, sigma = load_model_bundle()
@@ -67,41 +71,26 @@ def render(df_ref):
             text_color = '#166534' if percent >= 80 else '#854D0E' if percent >= 50 else '#991B1B'
             
             result_html = f"""
-            <div style="
-                background-color: #FFFFFF;
-                border: 1px solid #E5E7EB;
-                border-radius: 12px;
-                padding: 24px;
-                box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-            ">
-                <div style="font-size: 14px; color: #6B7280; margin-bottom: 8px;">
+            <div style="{get_bg_style('white')} {get_border_style('default')} border-radius: {BORDER_RADIUS['lg']}; padding: {SPACING['2xl']}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                <div style="{get_text_style('md', 'tertiary')} margin-bottom: {SPACING['sm']};">
                     예측 성과
                 </div>
-                <div style="font-size: 36px; font-weight: 700; color: #1F2937; margin-bottom: 12px;">
+                <div style="{get_text_style('5xl', 'primary', family='bold')} margin-bottom: {SPACING['md']};">
                     {percent:.1f}%
                 </div>
-                <div style="
-                    display: inline-block;
-                    padding: 4px 12px;
-                    border-radius: 4px;
-                    background-color: {bg_color};
-                    color: {text_color};
-                    font-size: 12px;
-                    font-weight: 600;
-                    margin-bottom: 16px;
-                ">
+                <div style="display: inline-block; padding: {SPACING['xs']} {SPACING['md']}; border-radius: {BORDER_RADIUS['sm']}; background-color: {bg_color}; color: {text_color}; {get_text_style('sm', weight='semibold')} margin-bottom: {SPACING['lg']};">
                     {level}
                 </div>
                 
-                <div style="border-top: 1px solid #E5E7EB; padding-top: 16px; margin-top: 16px;">
-                    <div style="font-size: 13px; color: #6B7280; margin-bottom: 4px;">
+                <div style="border-top: 1px solid #E5E7EB; padding-top: {SPACING['lg']}; margin-top: {SPACING['lg']};">
+                    <div style="{get_text_style('base', 'tertiary')} margin-bottom: {SPACING['xs']};">
                         이미지 타입
                     </div>
-                    <div style="font-size: 16px; font-weight: 600; color: #1F2937; margin-bottom: 16px;">
+                    <div style="{get_text_style('lg', 'primary', weight='semibold')} margin-bottom: {SPACING['lg']};">
                         Type {img_type} · {type_name}
                     </div>
                     
-                    <div style="font-size: 13px; color: #6B7280; line-height: 1.6;">
+                    <div style="{get_text_style('base', 'tertiary')} line-height: 1.6;">
                         이 이미지는 <strong>{selected_country}</strong> 시장 내 전체 콘텐츠 대비 
                         <strong>{level}</strong> 수준의 상대적 성과 위치에 해당합니다.
                     </div>
@@ -125,26 +114,13 @@ def render(df_ref):
                 text-align: center;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
             ">
-                <div style="
-                    font-size: 48px;
-                    margin-bottom: 16px;
-                    opacity: 0.6;
-                ">
+                <div style="font-size: {FONT_SIZES['6xl']}; margin-bottom: {SPACING['lg']}; opacity: 0.6;">
                     📸
                 </div>
-                <div style="
-                    font-size: 16px;
-                    font-weight: 600;
-                    color: #0C4A6E;
-                    margin-bottom: 8px;
-                ">
+                <div style="{get_text_style('lg', weight='semibold')} color: #0C4A6E; margin-bottom: {SPACING['sm']};">
                     이미지를 업로드해주세요
                 </div>
-                <div style="
-                    font-size: 13px;
-                    color: #075985;
-                    line-height: 1.6;
-                ">
+                <div style="{get_text_style('base')} color: #075985; line-height: 1.6;">
                     콘텐츠 성과를 예측하기 위해<br>
                     이미지를 업로드하면 예측 결과가 표시됩니다.
                 </div>

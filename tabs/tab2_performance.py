@@ -2,6 +2,10 @@ import streamlit as st
 import pandas as pd
 
 from utils.data_loader import load_meta_df
+from components.design_tokens import (
+    get_text_style, get_bg_style, TEXT_COLORS, FONT_SIZES, 
+    SPACING, BRAND_COLORS, FONT_WEIGHTS, FONT_FAMILIES
+)
 from utils.eda_metrics import (
     preprocess_country_data,
     get_image_type_distribution,
@@ -22,7 +26,6 @@ from components.layout import (
     render_image_type_guide,
     section_gap
 )
-from components.style import segmented_radio_style
 
 def render():
     df_meta = load_meta_df()
@@ -55,13 +58,8 @@ def render():
     section_gap(16)
     with st.expander("📁 이미지 유형 기준", expanded=False):
         st.markdown(
-            """
-            <div style="
-                font-size: 14px;
-                color: #6B7280;
-                line-height: 1.6;
-                margin-bottom: 20px;
-            ">
+            f"""
+            <div style="{get_text_style('md', 'tertiary')} line-height: 1.6; margin-bottom: {SPACING['xl']};">
                 Type 1~6은 게시물의 이미지 구성 방식이며, KPI 해석/성과 비교의 기준으로 사용됩니다.<br>
             </div>
             """,
@@ -108,21 +106,12 @@ def render():
     
     section_gap(32)
     
-    # 중분류 선택 (세그먼트 탭 스타일)
-    segmented_radio_style()
-    view = st.radio(
-        "중분류",
-        ["성과 요약", "지표별 비교"],
-        horizontal=True,
-        key="tab2_view"
-    )
-    
-    section_gap(24)
-    
     type_count, type_ratio = get_image_type_distribution(df_country)
     
-    # 조건부 렌더링: 성과 요약
-    if view == "성과 요약":
+    # 중분류 탭
+    summary_tab, metric_tab = st.tabs(["성과 요약", "지표별 비교"])
+    
+    with summary_tab:
         prob_10, conc_10, threshold_10 = get_top_percentile_metrics(df_country, 10)
         
         st.markdown(
@@ -135,73 +124,61 @@ def render():
             unsafe_allow_html=True
         )
         section_gap(16)
-    
-    if len(prob_10) > 0:
-        best_prob_type = prob_10.loc[prob_10["p_top10"].idxmax(), "img_type"]
-        best_prob_value = prob_10.loc[prob_10["p_top10"].idxmax(), "p_top10"]
-        best_prob_name = get_type_name(best_prob_type)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            st.markdown(
-                f"""
-                <div style="
-                    background-color: #FFFFFF;
-                    border: 1px solid #E5E7EB;
-                    border-radius: 8px;
-                    padding: 20px;
-                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-                ">
-                    <div style="font-size: 13px; color: #6B7280; margin-bottom: 8px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
-                        Top 10% 달성 확률 최고
-                    </div>
-                    <div style="font-size: 24px; font-weight: 700; color: #1F2937; margin-bottom: 4px; font-family: 'Arita-Dotum-Bold', 'Arita-dotum-Medium', sans-serif !important;">
-                        {best_prob_name}
-                    </div>
-                    <div style="font-size: 16px; color: #1F5795; font-weight: 600; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
-                        {best_prob_value*100:.1f}%
-                    </div>
-                    <div style="font-size: 12px; color: #9CA3AF; margin-top: 8px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
-                        Type {best_prob_type} · 전체 게시물 중 상위 10% 성과 달성 확률
-                    </div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-        
-        with col2:
-            if len(conc_10) > 0:
-                best_conc_type = conc_10.loc[conc_10["share_in_top10"].idxmax(), "img_type"]
-                best_conc_value = conc_10.loc[conc_10["share_in_top10"].idxmax(), "share_in_top10"]
-                best_conc_name = get_type_name(best_conc_type)
-                
+        if len(prob_10) > 0:
+            best_prob_type = prob_10.loc[prob_10["p_top10"].idxmax(), "img_type"]
+            best_prob_value = prob_10.loc[prob_10["p_top10"].idxmax(), "p_top10"]
+            best_prob_name = get_type_name(best_prob_type)
+            
+            col1, col2 = st.columns(2)
+            with col1:
                 st.markdown(
                     f"""
-                    <div style="
-                        background-color: #FFFFFF;
-                        border: 1px solid #E5E7EB;
-                        border-radius: 8px;
-                        padding: 20px;
-                        box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-                    ">
-                        <div style="font-size: 13px; color: #6B7280; margin-bottom: 8px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
-                            Top 10% 내 집중도 최고
+                    <div style="{get_bg_style('white')} border: 1px solid #E5E7EB; border-radius: 8px; padding: {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                        <div style="{get_text_style('base', 'tertiary')} margin-bottom: {SPACING['sm']};">
+                            Top 10% 달성 확률 최고
                         </div>
-                        <div style="font-size: 24px; font-weight: 700; color: #1F2937; margin-bottom: 4px; font-family: 'Arita-Dotum-Bold', 'Arita-dotum-Medium', sans-serif !important;">
-                            {best_conc_name}
+                        <div style="{get_text_style('3xl', 'primary', family='bold')} margin-bottom: {SPACING['xs']};">
+                            {best_prob_name}
                         </div>
-                        <div style="font-size: 16px; color: #1F5795; font-weight: 600; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
-                            {best_conc_value*100:.1f}%
+                        <div style="{get_text_style('lg', 'accent', 'semibold')}">
+                            {best_prob_value*100:.1f}%
                         </div>
-                        <div style="font-size: 12px; color: #9CA3AF; margin-top: 8px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
-                            Type {best_conc_type} · 상위 10% 성과 내에서 차지하는 비율
+                        <div style="{get_text_style('sm', 'muted')} margin-top: {SPACING['sm']};">
+                            Type {best_prob_type} · 전체 게시물 중 상위 10% 성과 달성 확률
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
-            else:
-                st.info("Top 10% 성과 데이터가 없습니다.")
+            
+            with col2:
+                if len(conc_10) > 0:
+                    best_conc_type = conc_10.loc[conc_10["share_in_top10"].idxmax(), "img_type"]
+                    best_conc_value = conc_10.loc[conc_10["share_in_top10"].idxmax(), "share_in_top10"]
+                    best_conc_name = get_type_name(best_conc_type)
+                    
+                    st.markdown(
+                        f"""
+                        <div style="{get_bg_style('white')} border: 1px solid #E5E7EB; border-radius: 8px; padding: {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                            <div style="{get_text_style('base', 'tertiary')} margin-bottom: {SPACING['sm']};">
+                                Top 10% 내 집중도 최고
+                            </div>
+                            <div style="{get_text_style('3xl', 'primary', family='bold')} margin-bottom: {SPACING['xs']};">
+                                {best_conc_name}
+                            </div>
+                            <div style="{get_text_style('lg', 'accent', 'semibold')}">
+                                {best_conc_value*100:.1f}%
+                            </div>
+                            <div style="{get_text_style('sm', 'muted')} margin-top: {SPACING['sm']};">
+                                Type {best_conc_type} · 상위 10% 성과 내에서 차지하는 비율
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.info("Top 10% 성과 데이터가 없습니다.")
         
         section_gap(48)
         
@@ -245,9 +222,25 @@ def render():
         # if summary_bullets:
         #     section_gap(24)
         #     render_insight_bullets(summary_bullets, title="국가별 인사이트")
+        
+        # 상세 통계 보기 (성과 요약 탭)
+        with st.expander("상세 통계 보기", expanded=False):
+            st.markdown("##### 고성과 달성 가능성 (Top 10%)")
+            if len(prob_10) > 0:
+                prob_display = prob_10.copy()
+                prob_display.columns = ["이미지 타입", "Top 10% 달성 확률"]
+                prob_display["Top 10% 달성 확률"] = prob_display["Top 10% 달성 확률"].apply(lambda x: f"{x*100:.1f}%")
+                st.dataframe(prob_display, use_container_width=True, hide_index=True)
+            
+            if len(conc_10) > 0:
+                conc_display = conc_10.copy()
+                conc_display.columns = ["이미지 타입", "Top 10% 내 비율"]
+                conc_display["Top 10% 내 비율"] = conc_display["Top 10% 내 비율"].apply(lambda x: f"{x*100:.1f}%")
+                st.dataframe(conc_display, use_container_width=True, hide_index=True)
+            
+            st.caption(f"💡 Top 10% 기준선: 참여율 {threshold_10:.6f} 이상")
     
-    # 조건부 렌더링: 지표별 비교
-    elif view == "지표별 비교":
+    with metric_tab:
         perf_summary = get_performance_summary(df_country)
         
         st.markdown(
@@ -273,45 +266,25 @@ def render():
         # if comparison_bullets:
         #     section_gap(24)
         #     render_insight_bullets(comparison_bullets, title="국가별 인사이트")
+        
+        # 상세 통계 보기 (지표별 비교 탭)
+        with st.expander("상세 통계 보기", expanded=False):
+            st.markdown("##### 이미지 유형별 평균 성과")
+            perf_display = perf_summary.copy()
+            perf_display.columns = [
+                "이미지 타입",
+                "개수",
+                "평균 좋아요",
+                "중앙값 좋아요",
+                "평균 댓글",
+                "중앙값 댓글",
+                "평균 참여율",
+                "중앙값 참여율"
+            ]
+            if "평균 참여율" in perf_display.columns:
+                perf_display["평균 참여율"] = perf_display["평균 참여율"].apply(lambda x: format_engagement_rate(x))
+            if "중앙값 참여율" in perf_display.columns:
+                perf_display["중앙값 참여율"] = perf_display["중앙값 참여율"].apply(lambda x: format_engagement_rate(x))
+            st.dataframe(perf_display, use_container_width=True, hide_index=True)
     
     section_gap(48)
-    
-    with st.expander("상세 통계 보기", expanded=False):
-        st.markdown("##### 이미지 유형별 평균 성과")
-        perf_display = perf_summary.copy()
-        perf_display.columns = [
-            "이미지 타입",
-            "개수",
-            "평균 좋아요",
-            "중앙값 좋아요",
-            "평균 댓글",
-            "중앙값 댓글",
-            "평균 참여율",
-            "중앙값 참여율"
-        ]
-        if "평균 참여율" in perf_display.columns:
-            perf_display["평균 참여율"] = perf_display["평균 참여율"].apply(lambda x: format_engagement_rate(x))
-        if "중앙값 참여율" in perf_display.columns:
-            perf_display["중앙값 참여율"] = perf_display["중앙값 참여율"].apply(lambda x: format_engagement_rate(x))
-        
-        # Streamlit 기본 데이터프레임 사용
-        st.dataframe(perf_display, use_container_width=True, hide_index=True)
-        
-        st.markdown("##### 고성과 달성 가능성 (Top 10%)")
-        if len(prob_10) > 0:
-            prob_display = prob_10.copy()
-            prob_display.columns = ["이미지 타입", "Top 10% 달성 확률"]
-            prob_display["Top 10% 달성 확률"] = prob_display["Top 10% 달성 확률"].apply(lambda x: f"{x*100:.1f}%")
-            
-            # Streamlit 기본 데이터프레임 사용
-            st.dataframe(prob_display, use_container_width=True, hide_index=True)
-        
-        if len(conc_10) > 0:
-            conc_display = conc_10.copy()
-            conc_display.columns = ["이미지 타입", "Top 10% 내 비율"]
-            conc_display["Top 10% 내 비율"] = conc_display["Top 10% 내 비율"].apply(lambda x: f"{x*100:.1f}%")
-            
-            # Streamlit 기본 데이터프레임 사용
-            st.dataframe(conc_display, use_container_width=True, hide_index=True)
-        
-        st.caption(f"💡 Top 10% 기준선: 참여율 {threshold_10:.6f} 이상")
