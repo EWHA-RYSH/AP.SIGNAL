@@ -28,6 +28,15 @@ CHART_PALETTE = [
     "#F3F4F6"   # Gray (가장 라이트)
 ]
 
+# 차트 강조 색상
+HIGHLIGHT_COLOR = "#4C6FBF"  # 채도 낮춘 블루 (강조 막대)
+DEFAULT_BAR_COLOR = "#E1E4EA"  # 막대 1개 기본 색상
+LIGHT_BLUE_HIGHLIGHT = "#B9CBE3"  # 아주 연한 블루 (Top 1 강조용)
+
+# 막대 2개짜리 그래프 색상
+MEDIAN_COLOR = "#E5E7EB"  # 중앙값 색상
+MEAN_COLOR = "#9CA3AF"  # 평균 색상
+
 TEMPLATE = "plotly_white"
 
 # 국가 코드 매핑
@@ -52,7 +61,7 @@ def apply_chart_style(fig, highlight_type=None):
         plot_bgcolor="white",
         paper_bgcolor="white",
         font=dict(size=12, color="#374151"),
-        margin=dict(l=40, r=40, t=40, b=40),
+        margin=dict(l=40, r=20, t=40, b=40),
         showlegend=False,
         title=dict(
             x=0.5,
@@ -73,7 +82,8 @@ def apply_chart_style(fig, highlight_type=None):
             showgrid=True,
             gridcolor="#F3F4F6",
             gridwidth=1,
-            zeroline=False
+            zeroline=False,
+            title=None
         )
     )
     # 모드바 숨김
@@ -98,40 +108,44 @@ def plot_usage_distribution(type_ratio, country, highlight_type=None):
         "Usage Share": type_ratio.values
     })
     
-    # 강조할 타입이 있으면 컬러 지정
+    # 최고값 막대는 연한 하늘색으로 강조
+    max_idx = type_ratio.idxmax()
     colors = []
-    for idx, img_type in enumerate(type_ratio.index):
-        if highlight_type and str(highlight_type) == str(img_type):
-            colors.append(BRAND_COLORS["primary"])  # primary 색상
+    text_values = []
+    for img_type in type_ratio.index:
+        if highlight_type is not None and img_type == highlight_type:
+            colors.append(LIGHT_BLUE_HIGHLIGHT)  # 최고값은 연한 하늘색
         else:
-            colors.append(CHART_PALETTE[0])  # 연한 회색
+            colors.append(DEFAULT_BAR_COLOR)  # 나머지는 #E1E4EA
+        text_values.append(f"{type_ratio[img_type]*100:.1f}%")
     
     fig = px.bar(
         df_plot,
         x="Image Type",
         y="Usage Share",
-        labels={"Image Type": "이미지 타입", "Usage Share": "활용 비율"},
-        title="이미지 타입별 활용 분포"
+        labels={"Image Type": "이미지 타입", "Usage Share": ""},
+        title="이미지 타입별 활용 분포",
+        text=text_values
     )
     
     fig.update_traces(
         marker_color=colors,
-        width=0.6  # 막대 폭 줄이기 (기본값보다 약 20-30% 얇게)
+        width=0.6,  # 막대 폭 줄이기 (기본값보다 약 20-30% 얇게)
+        textposition="outside",
+        textfont=dict(size=11, color="#6B7280", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
     )
     fig = apply_chart_style(fig, highlight_type)
     fig.update_layout(
         bargap=0.4,  # 막대 간격 조정 (0.35 ~ 0.45 범위)
+        showlegend=False,
         yaxis_tickformat=".0%",
+        yaxis=dict(title=None),
+        margin=dict(l=40, r=20, t=40, b=40),
         xaxis=dict(
             tickangle=0,
             title=dict(
                 font=dict(family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", size=12),
                 standoff=12
-            )
-        ),
-        yaxis=dict(
-            title=dict(
-                font=dict(family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", size=12)
             )
         )
     )
@@ -139,83 +153,52 @@ def plot_usage_distribution(type_ratio, country, highlight_type=None):
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
 
 def plot_engagement_distribution(df_country, country, highlight_type=None):
-    """참여율 분포 (Scatter Plot with Log Scale)"""
-    import numpy as np
+    """참여율 분포 (Bar Chart - 평균 참여율)"""
+    from utils.eda_metrics import get_performance_summary
     from components.layout import get_type_name
     
     country_name = get_country_name(country)
     
-    # 데이터 복사
-    df_plot = df_country.copy()
+    # 성과 요약 데이터 가져오기
+    perf_summary = get_performance_summary(df_country)
     
-    # 타입명으로 변환하여 x축 레이블 생성
-    df_plot["type_label"] = df_plot["img_type"].apply(
-        lambda x: f"{x}. {get_type_name(x)}"
+    if len(perf_summary) == 0:
+        st.info("참여율 데이터가 없습니다.")
+        return
+    
+    # 최고값 막대는 연한 하늘색으로 강조
+    max_idx = perf_summary["eng_mean"].idxmax()
+    colors = []
+    text_values = []
+    for idx, row in perf_summary.iterrows():
+        if highlight_type is not None and row["img_type"] == highlight_type:
+            colors.append(LIGHT_BLUE_HIGHLIGHT)  # 최고값은 연한 하늘색
+        else:
+            colors.append(DEFAULT_BAR_COLOR)  # 나머지는 #E1E4EA
+        # 값 라벨 추가 (참여율은 소수점 표시)
+        text_values.append(f"{row['eng_mean']:.4f}")
+    
+    fig = px.bar(
+        perf_summary,
+        x="img_type",
+        y="eng_mean",
+        labels={"img_type": "이미지 타입", "eng_mean": ""},
+        title="이미지 타입별 평균 참여율",
+        text=text_values
     )
-    
-    # 참여율에 작은 상수를 더해서 로그 변환 가능하게 함 (0 값 처리)
-    # 로그 스케일에서 0에 가까운 값들이 잘 보이도록
-    epsilon = 1e-6
-    df_plot["eng_rate_adj"] = df_plot["eng_rate"] + epsilon
-    
-    # 색상 및 크기 설정
-    if highlight_type:
-        colors = [
-            BRAND_COLORS["primary"] if str(img_type) == str(highlight_type) else CHART_PALETTE[0]
-            for img_type in df_plot["img_type"]
-        ]
-        sizes = [
-            10 if str(img_type) == str(highlight_type) else 6
-            for img_type in df_plot["img_type"]
-        ]
-    else:
-        colors = [CHART_PALETTE[0]] * len(df_plot)
-        sizes = [6] * len(df_plot)
-    
-    # scatter plot 생성
-    fig = px.scatter(
-        df_plot,
-        x="type_label",
-        y="eng_rate_adj",
-        labels={"type_label": "이미지 타입", "eng_rate_adj": "참여율"},
-        title="이미지 타입별 참여율 분포"
-    )
-    
-    # 색상 및 크기 적용
     fig.update_traces(
-        marker=dict(
-            color=colors,
-            size=sizes,
-            opacity=0.7
-        )
+        marker_color=colors, 
+        width=0.6,
+        textposition="outside",
+        textfont=dict(size=11, color="#6B7280", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
     )
-    
-    # 공통 스타일 적용
-    fig = apply_chart_style(fig, highlight_type)
-    
-    # 로그 스케일 적용 (apply_chart_style 이후에 적용하여 덮어쓰기)
-    # 더 읽기 쉬운 형식으로 표시
+    fig = apply_chart_style(fig)
     fig.update_layout(
-        margin=dict(b=50),  # 하단 마진
-        xaxis=dict(
-            tickangle=0,
-            title=dict(
-                font=dict(family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", size=12),
-                standoff=20
-            )
-        ),
-        yaxis=dict(
-            type="log",
-            showgrid=True,
-            gridcolor="#F3F4F6",
-            gridwidth=1,
-            zeroline=False,
-            title=dict(
-                text="참여율",
-                font=dict(family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", size=12)
-            ),
-            tickformat=".4f"
-        )
+        bargap=0.4, 
+        showlegend=False, 
+        height=400,
+        yaxis=dict(title=None),
+        margin=dict(l=40, r=20, t=40, b=40)
     )
     
     st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
@@ -235,12 +218,8 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
             "Usage Share": usage_df.values
         })
         
-        colors = []
-        for idx, img_type in enumerate(usage_df.index):
-            if highlight_type and str(highlight_type) == str(img_type):
-                colors.append(BRAND_COLORS["primary"])  # primary 색상
-            else:
-                colors.append(CHART_PALETTE[0])  # 연한 회색
+        # 모든 막대를 회색 계열로 통일 (데이터 비교는 중립색)
+        colors = [CHART_PALETTE[0]] * len(usage_df)
         
         fig1 = px.bar(
             df_usage,
@@ -277,12 +256,8 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
         df_eng = perf_df[["img_type", "eng_mean"]].copy()
         df_eng["type_label"] = df_eng["img_type"].apply(str)
         
-        colors = []
-        for img_type in df_eng["img_type"]:
-            if highlight_type and str(highlight_type) == str(img_type):
-                colors.append(BRAND_COLORS["primary"])  # primary 색상
-            else:
-                colors.append(CHART_PALETTE[0])  # 연한 회색
+        # 모든 막대를 회색 계열로 통일 (데이터 비교는 중립색)
+        colors = [CHART_PALETTE[0]] * len(df_eng)
         
         fig2 = px.bar(
             df_eng,

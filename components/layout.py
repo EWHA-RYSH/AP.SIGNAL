@@ -62,7 +62,7 @@ def render_kpi_card(label, value, subtext=None, highlight=False):
     subtext_html = f'<div class="kpi-subtext" style="{get_text_style("sm", "muted")} margin-top: {SPACING["xs"]};">{subtext}</div>' if subtext else ''
     
     st.markdown(
-        f'<div class="kpi-card-wrapper" style="{get_bg_style("white")} {get_border_style("default")} border-radius: {BORDER_RADIUS["md"]}; padding: {SPACING["xl"]}; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {highlight_style} width: 100%; box-sizing: border-box;"><div class="kpi-label" style="{get_text_style("base", "tertiary")} margin-bottom: {SPACING["sm"]};">{label}</div><div class="kpi-value" style="{get_text_style("xl", "primary", family="bold")}">{value}</div>{subtext_html}</div>',
+        f'<div class="kpi-card-wrapper" style="{get_bg_style("white")} {get_border_style("default")} border-radius: {BORDER_RADIUS["md"]}; padding: {SPACING["xl"]}; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {highlight_style} width: 100%; box-sizing: border-box; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;"><div><div class="kpi-label" style="{get_text_style("base", "tertiary")} margin-bottom: {SPACING["sm"]};">{label}</div><div class="kpi-value" style="{get_text_style("xl", "primary", family="bold")}">{value}</div></div>{subtext_html}</div>',
         unsafe_allow_html=True
     )
 
@@ -97,12 +97,20 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
     # bullets를 위계에 따라 HTML로 변환
     bullets_html = ""
     for bullet in bullets:
+        # 👉로 시작: 요약 문장 (볼드 적용)
+        if bullet.strip().startswith("👉"):
+            bullets_html += f'<div style="margin-bottom: {SPACING["md"]}; {get_text_style("md", "primary", family="bold")} line-height: 1.6;">{bullet}</div>'
         # 🧠로 시작: 보조 설명 톤
-        if bullet.strip().startswith("🧠"):
+        elif bullet.strip().startswith("🧠"):
             bullets_html += f'<div style="margin-bottom: {SPACING["lg"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
         # 📍로 시작: 결론
         elif bullet.strip().startswith("📍"):
             bullets_html += f'<div style="margin-bottom: {SPACING["md"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
+        # 🔎로 시작: 분석 항목 (볼드 해제)
+        elif "🔎" in bullet:
+            # <b> 태그 제거하고 일반 스타일 적용
+            bullet_text = bullet.replace("<b>", "").replace("</b>", "")
+            bullets_html += f'<div style="margin-bottom: {SPACING["sm"]}; {get_text_style("md", "secondary", "normal", "medium")} line-height: 1.6;">{bullet_text}</div>'
         # 기타: 기본 스타일
         else:
             bullets_html += f'<div style="margin-bottom: {SPACING["sm"]}; {get_text_style("md", "secondary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
