@@ -59,10 +59,10 @@ def render_page_header(title, country=None, n_posts=None, countries=None, select
 
 def render_kpi_card(label, value, subtext=None, highlight=False):
     highlight_style = f"border-left: 4px solid {BRAND_COLORS['primary']};" if highlight else ""
-    subtext_html = f'<div class="kpi-subtext" style="{get_text_style("sm", "muted")} margin-top: {SPACING["xs"]};">{subtext}</div>' if subtext else ''
+    subtext_html = f'<div class="kpi-subtext" style="{get_text_style("sm", "muted")} margin-top: auto; padding-top: {SPACING["sm"]};">{subtext}</div>' if subtext else ''
     
     st.markdown(
-        f'<div class="kpi-card-wrapper" style="{get_bg_style("white")} {get_border_style("default")} border-radius: {BORDER_RADIUS["md"]}; padding: {SPACING["xl"]}; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {highlight_style} width: 100%; box-sizing: border-box; min-height: 140px; display: flex; flex-direction: column; justify-content: space-between;"><div><div class="kpi-label" style="{get_text_style("base", "tertiary")} margin-bottom: {SPACING["sm"]};">{label}</div><div class="kpi-value" style="{get_text_style("xl", "primary", family="bold")}">{value}</div></div>{subtext_html}</div>',
+        f'<div class="kpi-card-wrapper" style="{get_bg_style("white")} {get_border_style("default")} border-radius: {BORDER_RADIUS["md"]}; padding: {SPACING["xl"]}; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {highlight_style} width: 100%; box-sizing: border-box; height: 140px; display: flex; flex-direction: column;"><div style="flex: 1;"><div class="kpi-label" style="{get_text_style("base", "tertiary")} margin-bottom: {SPACING["sm"]};">{label}</div><div class="kpi-value" style="{get_text_style("xl", "primary", family="bold")}">{value}</div></div>{subtext_html}</div>',
         unsafe_allow_html=True
     )
 
@@ -97,27 +97,61 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
     # bullets를 위계에 따라 HTML로 변환
     bullets_html = ""
     for bullet in bullets:
+        bullet_clean = bullet.strip()
+        
+        # 📍 전략 요약: 이모지 + <b>전략 요약</b> + 설명
+        if bullet_clean.startswith("📍"):
+            # 이모지와 <b> 태그 제거하고 텍스트 추출
+            text = bullet_clean.replace("📍", "").strip()
+            # <b>전략 요약</b> 또는 <b>전략 요약</b>: 패턴 처리
+            if "<b>전략 요약</b>" in text or "<b>전략 요약</b>:" in text:
+                label = "전략 요약"
+                desc = text.replace("<b>전략 요약</b>", "").replace("<b>전략 요약</b>:", "").replace(":", "").strip()
+                bullets_html += f'''
+                <div style="margin-bottom: {SPACING["lg"]};">
+                    <div style="display: flex; align-items: flex-start; gap: {SPACING["xs"]}; margin-bottom: {SPACING["xs"]};">
+                        <span style="font-size: {FONT_SIZES["sm"]};">📌</span>
+                        <div style="{get_text_style("sm", "primary", "bold", "bold")} font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">{label}:</div>
+                    </div>
+                    <div style="padding-left: {SPACING["xl"]}; {get_text_style("sm", "secondary", "normal", "medium")} line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">{desc}</div>
+                </div>'''
+            else:
+                bullets_html += f'<div style="margin-bottom: {SPACING["md"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{text}</div>'
+        
+        # 🧠 분석: 이모지 + <b>분석</b> + 설명
+        elif bullet_clean.startswith("🧠"):
+            text = bullet_clean.replace("🧠", "").strip()
+            if "<b>분석</b>" in text:
+                label = "분석"
+                desc = text.replace("<b>분석</b>", "").replace("<b>분석</b>:", "").replace(":", "").strip()
+                bullets_html += f'''
+                <div style="margin-bottom: {SPACING["md"]};">
+                    <div style="display: flex; align-items: flex-start; gap: {SPACING["xs"]}; margin-bottom: {SPACING["xs"]};">
+                        <span style="font-size: {FONT_SIZES["sm"]};">🧠</span>
+                        <div style="{get_text_style("sm", "primary", "bold", "bold")} font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">{label}</div>
+                    </div>
+                    <div style="padding-left: {SPACING["xl"]}; {get_text_style("sm", "secondary", "normal", "medium")} line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">{desc}</div>
+                </div>'''
+            else:
+                bullets_html += f'<div style="margin-bottom: {SPACING["lg"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{text}</div>'
+        
         # 👉로 시작: 요약 문장 (볼드 적용)
-        if bullet.strip().startswith("👉"):
+        elif bullet_clean.startswith("👉"):
             bullets_html += f'<div style="margin-bottom: {SPACING["md"]}; {get_text_style("md", "primary", family="bold")} line-height: 1.6;">{bullet}</div>'
-        # 🧠로 시작: 보조 설명 톤
-        elif bullet.strip().startswith("🧠"):
-            bullets_html += f'<div style="margin-bottom: {SPACING["lg"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
-        # 📍로 시작: 결론
-        elif bullet.strip().startswith("📍"):
-            bullets_html += f'<div style="margin-bottom: {SPACING["md"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
+        
         # 🔎로 시작: 분석 항목 (볼드 해제)
         elif "🔎" in bullet:
             # <b> 태그 제거하고 일반 스타일 적용
             bullet_text = bullet.replace("<b>", "").replace("</b>", "")
             bullets_html += f'<div style="margin-bottom: {SPACING["sm"]}; {get_text_style("md", "secondary", "normal", "medium")} line-height: 1.6;">{bullet_text}</div>'
+        
         # 기타: 기본 스타일
         else:
             bullets_html += f'<div style="margin-bottom: {SPACING["sm"]}; {get_text_style("md", "secondary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
     
     title_html = ""
     if title:
-        title_html = f'<div style="{get_text_style("xl", "primary", family="bold")} margin-bottom: {SPACING["lg"]};">{title}</div>'
+        title_html = f'<div style="{get_text_style("xl", "primary", family="bold")} margin-bottom: {SPACING["lg"]}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{title}</div>'
     
     # HTML 구성 (왼쪽 라인: 연한 회색, 두께 2px)
     html_content = f'''<div style="{get_bg_style("white")} {get_border_style("default")} border-left: 2px solid {BORDER_COLORS["light"]}; border-radius: {BORDER_RADIUS["sm"]}; padding: {SPACING["xl"]} {SPACING["2xl"]}; margin: {SPACING["xl"]} 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {get_text_style("md", "primary", "normal", "medium")}">

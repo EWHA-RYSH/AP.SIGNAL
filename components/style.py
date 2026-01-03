@@ -113,6 +113,34 @@ def inject_style():
             font-family: 'Arita-Dotum-Bold', 'Arita-dotum-Bold', 'Arita-Dotum-Bold', 'Malgun Gothic', sans-serif !important;
         }}
         
+        /* 결론 배너 폰트 적용 */
+        div[data-testid="stMarkdownContainer"] div[style*="background-color: rgba(31, 87, 149, 0.08)"] div,
+        div[data-testid="stMarkdownContainer"] div[style*="background-color: rgba(31, 87, 149, 0.08)"] * {{
+            font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;
+        }}
+        
+        /* 전략 제안 섹션 폰트 적용 */
+        div[data-testid="stMarkdownContainer"] div[style*="border-left: 3px solid"] div,
+        div[data-testid="stMarkdownContainer"] div[style*="border-left: 3px solid"] *,
+        div[data-testid="stMarkdownContainer"] div[style*="background-color: rgba(31, 87, 149, 0.03)"] div,
+        div[data-testid="stMarkdownContainer"] div[style*="background-color: rgba(31, 87, 149, 0.03)"] *,
+        div[data-testid="stMarkdownContainer"] div[style*="background-color: #F9FAFB"] div,
+        div[data-testid="stMarkdownContainer"] div[style*="background-color: #F9FAFB"] *,
+        div[data-testid="stMarkdownContainer"] div[style*="background-color: #FFFFFF"] div,
+        div[data-testid="stMarkdownContainer"] div[style*="background-color: #FFFFFF"] *,
+        .strategy-section,
+        .strategy-section *,
+        .strategy-section div,
+        .strategy-section span,
+        .strategy-section p,
+        .comprehensive-insight,
+        .comprehensive-insight *,
+        .comprehensive-insight div,
+        .comprehensive-insight span,
+        .comprehensive-insight p {{
+            font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;
+        }}
+        
         h1, h2, h3, h4, h5, h6, .h1, .h2, .h3, .h4 {{
             font-family: 'Arita-Dotum-Bold', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', sans-serif !important;
             font-weight: 700 !important;

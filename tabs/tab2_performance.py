@@ -2,11 +2,12 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import re
 
 from utils.data_loader import load_meta_df
 from components.design_tokens import (
     get_text_style, get_bg_style, get_border_style, TEXT_COLORS, FONT_SIZES, 
-    SPACING, BRAND_COLORS, FONT_WEIGHTS, FONT_FAMILIES, BORDER_RADIUS, BORDER_COLORS
+    SPACING, BRAND_COLORS, FONT_WEIGHTS, FONT_FAMILIES, BORDER_RADIUS, BORDER_COLORS, BG_COLORS
 )
 from utils.eda_metrics import (
     preprocess_country_data,
@@ -132,19 +133,61 @@ def render():
     with tab1:
         perf_summary = get_performance_summary(df_country)
         response_char = get_response_characteristics(df_country)
+        country_insight = insights.get(selected_country, {})
+        strategy_insights = country_insight.get("strategy_insights", {})
+        performance_bullets = country_insight.get("performance_comparison", {}).get("bullets", [])
         
         # 참여율 분포
         st.markdown(
             """
             <div class="section">
                 <h4 class="section-title">참여율 분포</h4>
-                <div class="section-desc">이미지 타입별 참여율(Engagement Rate) 분포를 비교합니다.</div>
             </div>
             """,
             unsafe_allow_html=True
         )
         section_gap(16)
         
+        # 상단 결론 배너
+        if len(perf_summary) > 0:
+            max_idx = perf_summary["eng_mean"].idxmax()
+            max_type = int(perf_summary.loc[max_idx, "img_type"])
+            max_value = perf_summary.loc[max_idx, "eng_mean"]
+            max_name = get_type_name(max_type)
+            
+            # 성과 구조 해석에서 핵심 결론 추출
+            conclusion_text = f"Type {max_type}({max_name})가 참여율 {format_engagement_rate(max_value)}로 최고 성과를 기록합니다."
+            if performance_bullets:
+                for bullet in performance_bullets:
+                    bullet_clean = bullet.strip()
+                    if ("상위 콘텐츠" in bullet_clean or "성과 지표" in bullet_clean or "비선형" in bullet_clean or 
+                        "참여율과 반응 지표" in bullet_clean or "다수 콘텐츠의 누적" in bullet_clean):
+                        # 핵심 문장만 추출 (1-2문장), 마침표 보존
+                        sentences = bullet_clean.split('.')
+                        if len(sentences) > 0:
+                            conclusion_text = sentences[0].strip()
+                            if not conclusion_text.endswith('.'):
+                                conclusion_text += '.'
+                            if len(sentences) > 1 and len(conclusion_text) < 80:
+                                second_sentence = sentences[1].strip()
+                                if second_sentence:
+                                    if not second_sentence.endswith('.'):
+                                        second_sentence += '.'
+                                    conclusion_text += ' ' + second_sentence
+                        break
+            
+            st.markdown(
+                f"""
+                <div style="background-color: rgba(31, 87, 149, 0.08); border-left: 4px solid {BRAND_COLORS['primary']}; padding: {SPACING['md']} {SPACING['lg']}; margin-bottom: {SPACING['lg']};">
+                    <div style="font-size: {FONT_SIZES['md']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        {conclusion_text}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        # 차트
         if len(perf_summary) > 0:
             # Top 1만 연한 블루로 강조
             max_idx = perf_summary["eng_mean"].idxmax()
@@ -178,9 +221,37 @@ def render():
                 showlegend=False, 
                 height=400,
                 yaxis=dict(title=None),
-                margin=dict(l=40, r=20, t=40, b=40)
+                margin=dict(l=40, r=20, t=70, b=40),
+                title=dict(
+                    x=0.5,
+                    xanchor="center",
+                    y=0.94,
+                    yanchor="top",
+                    font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
+                )
             )
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key=f"tab1_engagement_{selected_country}")
+        
+        # 하단 상세 해석 (접기)
+        if performance_bullets:
+            structure_analysis = ""
+            for bullet in performance_bullets:
+                bullet_clean = bullet.strip()
+                if ("상위 콘텐츠" in bullet_clean or "성과 지표" in bullet_clean or "비선형" in bullet_clean or 
+                    "참여율과 반응 지표" in bullet_clean or "다수 콘텐츠의 누적" in bullet_clean):
+                    structure_analysis = bullet_clean
+                    break
+            
+            if structure_analysis:
+                with st.expander("상세 해석", expanded=False):
+                    st.markdown(
+                        f"""
+                        <div style="font-size: {FONT_SIZES['sm']}; color: {TEXT_COLORS['secondary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            {structure_analysis}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
         
         section_gap(48)
         
@@ -195,6 +266,42 @@ def render():
         )
         section_gap(16)
         
+        # 상단 결론 배너
+        if len(perf_summary) > 0:
+            # 반응 성격 분석에서 핵심 결론 추출
+            conclusion_text = "좋아요와 댓글 반응 패턴을 확인합니다."
+            if performance_bullets:
+                for bullet in performance_bullets:
+                    bullet_clean = bullet.strip()
+                    if ("좋아요와 댓글" in bullet_clean or "확산형 반응" in bullet_clean or 
+                        "반응의 양과 질" in bullet_clean or "좋아요 중심" in bullet_clean or 
+                        "댓글 기여도" in bullet_clean):
+                        # 핵심 문장만 추출 (1-2문장), 마침표 보존
+                        sentences = bullet_clean.split('.')
+                        if len(sentences) > 0:
+                            conclusion_text = sentences[0].strip()
+                            if not conclusion_text.endswith('.'):
+                                conclusion_text += '.'
+                            if len(sentences) > 1 and len(conclusion_text) < 80:
+                                second_sentence = sentences[1].strip()
+                                if second_sentence:
+                                    if not second_sentence.endswith('.'):
+                                        second_sentence += '.'
+                                    conclusion_text += ' ' + second_sentence
+                        break
+            
+            st.markdown(
+                f"""
+                <div style="background-color: rgba(31, 87, 149, 0.08); border-left: 4px solid {BRAND_COLORS['primary']}; padding: {SPACING['md']} {SPACING['lg']}; margin-bottom: {SPACING['lg']};">
+                    <div style="font-size: {FONT_SIZES['md']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        {conclusion_text}
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+        
+        # 차트
         col1, col2 = st.columns(2)
         with col1:
             if len(perf_summary) > 0:
@@ -221,7 +328,14 @@ def render():
                     height=400,
                     showlegend=True,
                     yaxis=dict(title=None),
-                    margin=dict(l=40, r=40, t=40, b=60),
+                    margin=dict(l=40, r=40, t=70, b=60),
+                    title=dict(
+                        x=0.5,
+                        xanchor="center",
+                        y=0.94,
+                        yanchor="top",
+                        font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
+                    ),
                     legend=dict(
                         orientation="h",
                         yanchor="top",
@@ -236,7 +350,7 @@ def render():
                         bordercolor="rgba(255,255,255,0)"
                     )
                 )
-                st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False}, key=f"tab1_likes_{selected_country}")
         
         with col2:
             if len(perf_summary) > 0:
@@ -263,7 +377,14 @@ def render():
                     height=400,
                     showlegend=True,
                     yaxis=dict(title=None),
-                    margin=dict(l=40, r=40, t=40, b=60),
+                    margin=dict(l=40, r=40, t=70, b=60),
+                    title=dict(
+                        x=0.5,
+                        xanchor="center",
+                        y=0.94,
+                        yanchor="top",
+                        font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
+                    ),
                     legend=dict(
                         orientation="h",
                         yanchor="top",
@@ -278,16 +399,83 @@ def render():
                         bordercolor="rgba(255,255,255,0)"
                     )
                 )
-                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False}, key=f"tab1_comments_{selected_country}")
+        
+        # 하단 상세 해석 (접기)
+        if performance_bullets:
+            reaction_analysis = ""
+            for bullet in performance_bullets:
+                bullet_clean = bullet.strip()
+                if ("좋아요와 댓글" in bullet_clean or "확산형 반응" in bullet_clean or 
+                    "반응의 양과 질" in bullet_clean or "좋아요 중심" in bullet_clean or 
+                    "댓글 기여도" in bullet_clean):
+                    reaction_analysis = bullet_clean
+                    break
+            
+            if reaction_analysis:
+                with st.expander("상세 해석", expanded=False):
+                    st.markdown(
+                        f"""
+                        <div style="font-size: {FONT_SIZES['sm']}; color: {TEXT_COLORS['secondary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            {reaction_analysis}
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
         
         section_gap(48)
         
-        # 국가별 인사이트 표시
-        country_insight = insights.get(selected_country, {})
-        performance_bullets = country_insight.get("performance_comparison", {}).get("bullets", [])
-        if performance_bullets:
-            section_gap(24)
-            render_insight_bullets(performance_bullets, title="국가별 인사이트")
+        # 활용도 vs 성과 분석
+        st.markdown(
+            """
+            <div class="section">
+                <h4 class="section-title">활용도 vs 성과 분석</h4>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        section_gap(16)
+        
+        # 상단 결론 배너
+        usage_vs_perf_data = strategy_insights.get("usage_vs_performance", {})
+        if usage_vs_perf_data:
+            # 핵심 판단 문장 추출
+            key_insight = ""
+            if usage_vs_perf_data.get("comparison_analysis"):
+                text = usage_vs_perf_data["comparison_analysis"]
+                if "📍" in text:
+                    key_insight = text.split(":", 1)[1].strip() if ":" in text else text.replace("📍", "").strip()
+            elif usage_vs_perf_data.get("actual_performance"):
+                text = usage_vs_perf_data["actual_performance"]
+                if "🏆" in text:
+                    key_insight = text.split(":", 1)[1].strip() if ":" in text else text.replace("🏆", "").strip()
+            
+            if key_insight:
+                # 마침표 확인 및 추가
+                if not key_insight.endswith('.'):
+                    key_insight += '.'
+                
+                st.markdown(
+                    f"""
+                    <div style="background-color: rgba(31, 87, 149, 0.08); border-left: 4px solid {BRAND_COLORS['primary']}; padding: {SPACING['md']} {SPACING['lg']}; margin-bottom: {SPACING['lg']};">
+                        <div style="font-size: {FONT_SIZES['md']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            {key_insight}
+                        </div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+        
+        # 차트
+        perf_summary = get_performance_summary(df_country)
+        plot_usage_vs_engagement(
+            type_ratio,
+            perf_summary,
+            selected_country,
+            key_suffix="tab1"
+        )
+        
+        section_gap(48)
         
         # 상세 통계 보기
         with st.expander("상세 통계 보기", expanded=False):
@@ -350,7 +538,7 @@ def render():
                             <div style="{get_text_style('sm', 'tertiary', family='medium')} font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']};">
                                 달성 확률 최고
                             </div>
-                            <div style="font-size: 24px !important; font-weight: 900 !important; color: {BRAND_COLORS['primary']} !important; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']}; line-height: 1.2;">
+                            <div style="font-size: 24px !important; font-weight: 900 !important; color: {BRAND_COLORS['primary']} !important; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']}; line-height: 1.2; letter-spacing: -0.3px; text-shadow: 0.3px 0 0 currentColor;">
                                 {best_prob_name}
                             </div>
                             <div style="{get_text_style('lg', 'accent', 'semibold', family='bold')} font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['sm']};">
@@ -364,7 +552,7 @@ def render():
                             <div style="{get_text_style('sm', 'tertiary', family='medium')} font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']};">
                                 집중도 최고
                             </div>
-                            <div style="font-size: 24px !important; font-weight: 900 !important; color: {BRAND_COLORS['primary']} !important; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']}; line-height: 1.2;">
+                            <div style="font-size: 24px !important; font-weight: 900 !important; color: {BRAND_COLORS['primary']} !important; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']}; line-height: 1.2; letter-spacing: -0.3px; text-shadow: 0.3px 0 0 currentColor;">
                                 {best_conc_name}
                             </div>
                             <div style="{get_text_style('lg', 'accent', 'semibold', family='bold')} font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['sm']};">
@@ -402,7 +590,7 @@ def render():
                             <div style="{get_text_style('sm', 'tertiary', family='medium')} font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']};">
                                 달성 확률 최고
                             </div>
-                            <div style="font-size: 24px !important; font-weight: 900 !important; color: {BRAND_COLORS['primary']} !important; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']}; line-height: 1.2;">
+                            <div style="font-size: 24px !important; font-weight: 900 !important; color: {BRAND_COLORS['primary']} !important; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']}; line-height: 1.2; letter-spacing: -0.3px; text-shadow: 0.3px 0 0 currentColor;">
                                 {best_prob30_name}
                             </div>
                             <div style="{get_text_style('lg', 'accent', 'semibold', family='bold')} font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['sm']};">
@@ -416,7 +604,7 @@ def render():
                             <div style="{get_text_style('sm', 'tertiary', family='medium')} font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']};">
                                 집중도 최고
                             </div>
-                            <div style="font-size: 24px !important; font-weight: 900 !important; color: {BRAND_COLORS['primary']} !important; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']}; line-height: 1.2;">
+                            <div style="font-size: 24px !important; font-weight: 900 !important; color: {BRAND_COLORS['primary']} !important; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['xs']}; line-height: 1.2; letter-spacing: -0.3px; text-shadow: 0.3px 0 0 currentColor;">
                                 {best_conc30_name}
                             </div>
                             <div style="{get_text_style('lg', 'accent', 'semibold', family='bold')} font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', sans-serif !important; margin-bottom: {SPACING['sm']};">
@@ -477,6 +665,13 @@ def render():
                 showlegend=True,
                 yaxis=dict(title=None),
                 margin=dict(l=40, r=20, t=40, b=40),
+                title=dict(
+                    x=0.5,
+                    xanchor="center",
+                    y=0.94,
+                    yanchor="top",
+                    font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
+                ),
                 legend=dict(
                     orientation="h",
                     yanchor="top",
@@ -491,25 +686,83 @@ def render():
                     bordercolor="rgba(255,255,255,0)"
                 )
             )
-            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key=f"tab2_highperf_{selected_country}")
         
-        # 고성과 분석 인사이트 표시
+        # 패턴 요약 박스 (고성과 분석 구조적 결론)
         country_insight = insights.get(selected_country, {})
         high_perf_insight = country_insight.get("high_performance_analysis", {})
         if high_perf_insight:
-            section_gap(48)
+            section_gap(40)
             summary = high_perf_insight.get("summary", "")
             bullets = high_perf_insight.get("bullets", [])
             
-            # 요약 문장을 bullets 앞에 추가하여 박스 안에 표시
-            all_bullets = []
-            if summary:
-                all_bullets.append(f"👉 {summary}")
-            if bullets:
-                all_bullets.extend(bullets)
-            
-            if all_bullets:
-                render_insight_bullets(all_bullets, title="고성과 분석")
+            if summary or bullets:
+                # 변수 미리 추출
+                sm_size = FONT_SIZES["sm"]
+                base_size = FONT_SIZES["base"]
+                primary_color = BRAND_COLORS["primary"]
+                text_primary = TEXT_COLORS["primary"]
+                spacing_md = SPACING["md"]
+                spacing_lg = SPACING["lg"]
+                spacing_xl = SPACING["xl"]
+                spacing_xs = SPACING["xs"]
+                spacing_sm = SPACING["sm"]
+                
+                content_html = ""
+                
+                # 패턴 요약 (summary) - 제목 없이 내용만
+                if summary:
+                    # summary와 첫 번째 bullet 사이 여백은 유지 (spacing_xl)
+                    content_html += f'<div style="margin-bottom: {spacing_xl};"><div style="font-size: {base_size}; font-weight: 400; color: {text_primary}; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{summary}</div></div>'
+                
+                # 고성과 분포 특성으로 보기
+                if bullets and len(bullets) > 0:
+                    # 아이콘 매핑 (제목에 따라 적절한 아이콘 선택)
+                    icon_map = {
+                        "고성과 분포 특성": "📊",
+                        "고성과 이미지 타입 집중도": "🎯",
+                        "고성과 분포 특성으로 보기": "📊",
+                        "고성과 이미지 타입 집중도로 보기": "🎯"
+                    }
+                    
+                    for i, bullet in enumerate(bullets):
+                        bullet_clean = bullet.strip()
+                        # <b> 태그 제거
+                        bullet_text = bullet_clean.replace("<b>", "").replace("</b>", "")
+                        # 🔎 제거
+                        bullet_text = bullet_text.replace("🔎", "").strip()
+                        
+                        # 마지막 항목인지 확인 (summary가 없고 bullets의 마지막이면)
+                        is_last = (i == len(bullets) - 1) and not summary
+                        margin_bottom = "0" if is_last else f"{spacing_xl}"
+                        
+                        # 제목 추출 (콜론 앞부분)
+                        if ":" in bullet_text:
+                            title, content = bullet_text.split(":", 1)
+                            title = title.strip()
+                            content = content.strip()
+                            
+                            # 아이콘 선택
+                            icon = "📋"  # 기본 아이콘
+                            for key, value in icon_map.items():
+                                if key in title:
+                                    icon = value
+                                    break
+                            
+                            content_html += f'<div style="margin-bottom: {margin_bottom};"><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{icon} {title}</div><div style="font-size: {base_size}; font-weight: 400; color: {text_primary}; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{content}</div></div>'
+                
+                if content_html:
+                    # st.html 사용 (Streamlit 1.28.0+)
+                    try:
+                        st.html(
+                            f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl}; margin-bottom: {spacing_lg}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;"><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📊 패턴 요약</div>{content_html}</div>'
+                        )
+                    except AttributeError:
+                        # st.html이 없는 경우 st.markdown 사용
+                        st.markdown(
+                            f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl}; margin-bottom: {spacing_lg}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;"><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📊 패턴 요약</div>{content_html}</div>',
+                            unsafe_allow_html=True
+                        )
         
         # 상세 통계 보기
         with st.expander("상세 통계 보기", expanded=False):
@@ -701,9 +954,9 @@ def render():
             with col1:
                 st.markdown(
                     f"""
-                    <div style="margin-bottom: 8px;">
-                        <div style="{get_text_style('md', 'secondary', 'semibold')} margin-bottom: 2px;">표준편차 (STD)</div>
-                        <div style="{get_text_style('sm', 'tertiary')}">성과 변동성 측정</div>
+                    <div style="margin-bottom: 8px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                        <div style="{get_text_style('md', 'secondary', 'semibold')} margin-bottom: 2px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">표준편차 (STD)</div>
+                        <div style="{get_text_style('sm', 'tertiary')} font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">성과 변동성 측정</div>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -736,14 +989,14 @@ def render():
                     xaxis=dict(title=None),
                     autosize=True
                 )
-                st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False}, key=f"tab3_std_{selected_country}")
             
             with col2:
                 st.markdown(
                     f"""
-                    <div style="margin-bottom: 8px;">
-                        <div style="{get_text_style('md', 'secondary', 'semibold')} margin-bottom: 2px;">IQR (사분위수 범위)</div>
-                        <div style="{get_text_style('sm', 'tertiary')}">중간 50% 퍼짐 정도</div>
+                    <div style="margin-bottom: 8px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                        <div style="{get_text_style('md', 'secondary', 'semibold')} margin-bottom: 2px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">IQR (사분위수 범위)</div>
+                        <div style="{get_text_style('sm', 'tertiary')} font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">중간 50% 퍼짐 정도</div>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -776,14 +1029,14 @@ def render():
                     xaxis=dict(title=None),
                     autosize=True
                 )
-                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False}, key=f"tab3_iqr_{selected_country}")
             
             with col3:
                 st.markdown(
                     f"""
-                    <div style="margin-bottom: 8px;">
-                        <div style="{get_text_style('md', 'secondary', 'semibold')} margin-bottom: 2px;">변동계수 (CV)</div>
-                        <div style="{get_text_style('sm', 'tertiary')}">상대적 변동성</div>
+                    <div style="margin-bottom: 8px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                        <div style="{get_text_style('md', 'secondary', 'semibold')} margin-bottom: 2px; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">변동계수 (CV)</div>
+                        <div style="{get_text_style('sm', 'tertiary')} font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">상대적 변동성</div>
                     </div>
                     """,
                     unsafe_allow_html=True
@@ -816,7 +1069,7 @@ def render():
                     xaxis=dict(title=None),
                     autosize=True
                 )
-                st.plotly_chart(fig3, use_container_width=True, config={"displayModeBar": False})
+                st.plotly_chart(fig3, use_container_width=True, config={"displayModeBar": False}, key=f"tab3_cv_{selected_country}")
 
         # 상세 통계 보기
         with st.expander("상세 통계 보기", expanded=False):
@@ -837,132 +1090,394 @@ def render():
     # ============================================
     with tab4:
         usage_vs_perf, underused, overused = get_usage_vs_performance(df_country, 10)
+        country_insight = insights.get(selected_country, {})
+        strategy_insights = country_insight.get("strategy_insights", {})
+        from utils.charts import get_country_name
+        perf_summary = get_performance_summary(df_country)
         
+        # ============================================
+        # 1️⃣ 종합 인사이트 (최상단)
+        # ============================================
+        st.markdown(
+            """
+            <div class="section">
+                <h4 class="section-title">종합 인사이트</h4>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+        section_gap(4)
+        
+        country_summary = strategy_insights.get("summary", {})
+        usage_vs_perf_data = strategy_insights.get("usage_vs_performance", {})
+        
+        if country_summary:
+            insight = country_summary.get("insight", "")
+            current_status = country_summary.get("current_status", "")
+            performance_core = country_summary.get("performance_core", "")
+            
+            # 한 줄 결론 추출 (인사이트에서)
+            conclusion = insight.replace("인사이트:", "").strip() if "인사이트:" in insight else insight.strip()
+            
+            # 현재 운영 요약 추출 (숫자 추출용)
+            current_ops = current_status.replace("현황:", "").strip() if "현황:" in current_status else current_status.strip()
+            
+            # 성과 핵심 요약 추출 (숫자 추출용)
+            perf_key = performance_core.replace("성과 핵심:", "").strip() if "성과 핵심:" in performance_core else performance_core.strip()
+            
+            # 숫자 강조를 위한 정규식으로 숫자 추출 및 강조 처리
+            # 현재 운영에서 숫자 찾기 (예: "47%", "유형 1·2")
+            current_ops_highlighted = current_ops
+            # 숫자와 % 패턴 찾아서 강조
+            current_ops_highlighted = re.sub(
+                r'(\d+(?:\.\d+)?%)', 
+                f'<span style="color: {BRAND_COLORS["primary"]}; font-weight: 700;">\\1</span>', 
+                current_ops_highlighted
+            )
+            # 유형 번호 강조
+            current_ops_highlighted = re.sub(
+                r'(유형\s*\d+(?:·\d+)?)', 
+                f'<span style="color: {BRAND_COLORS["primary"]}; font-weight: 600;">\\1</span>', 
+                current_ops_highlighted
+            )
+            
+            # 성과 핵심에서 숫자 찾기 (예: "1.5~2배", "유형 4")
+            perf_key_highlighted = perf_key
+            # 배수 패턴 강조
+            perf_key_highlighted = re.sub(
+                r'(\d+(?:\.\d+)?~?\d*(?:\.\d+)?배)', 
+                f'<span style="color: {BRAND_COLORS["primary"]}; font-weight: 700;">\\1</span>', 
+                perf_key_highlighted
+            )
+            # 유형 번호 강조
+            perf_key_highlighted = re.sub(
+                r'(유형\s*\d+)', 
+                f'<span style="color: {BRAND_COLORS["primary"]}; font-weight: 600;">\\1</span>', 
+                perf_key_highlighted
+            )
+            
+            # HTML 문자열 생성 (정규식으로 생성한 HTML이 제대로 렌더링되도록)
+            html_content = f"""
+            <div class="comprehensive-insight" style="margin-top: 0; margin-bottom: {SPACING['md']};">
+                <div style="background-color: {BG_COLORS['white']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['xl']} {SPACING['xl']}; border: 1px solid {BORDER_COLORS['default']}; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
+                    <div style="font-size: {FONT_SIZES['lg']}; font-weight: 700; color: {TEXT_COLORS['primary']}; line-height: 1.7; word-break: keep-all; margin-bottom: {SPACING['lg']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        {conclusion}
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: {SPACING['xl']}; padding-top: {SPACING['md']}; border-top: 1px solid {BORDER_COLORS['lighter']};">
+                        <div>
+                            <div style="font-size: {FONT_SIZES['xs']}; font-weight: 600; color: {TEXT_COLORS['secondary']}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {SPACING['xs']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                                현재 운영
+                            </div>
+                            <div style="font-size: {FONT_SIZES['base']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                                {current_ops_highlighted}
+                            </div>
+                        </div>
+                        <div>
+                            <div style="font-size: {FONT_SIZES['xs']}; font-weight: 600; color: {TEXT_COLORS['secondary']}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {SPACING['xs']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                                핵심 성과
+                            </div>
+                            <div style="font-size: {FONT_SIZES['base']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                                {perf_key_highlighted}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            """
+            
+            st.markdown(html_content, unsafe_allow_html=True)
+        
+        section_gap(32)
+        
+        # ============================================
+        # 활용도 vs 성과 분석 (그래프)
+        # ============================================
         st.markdown(
             """
             <div class="section">
                 <h4 class="section-title">활용도 vs 성과 분석</h4>
-                <div class="section-desc">활용 빈도와 참여율을 함께 비교하여, 과소 활용되었지만 성과가 높은 콘텐츠 유형을 탐색합니다.</div>
+                <div class="section-desc">각 이미지 유형의 활용 비중과 실제 성과를 비교하여 운영 효율성을 분석합니다.</div>
             </div>
             """,
             unsafe_allow_html=True
         )
         section_gap(16)
         
-        perf_summary = get_performance_summary(df_country)
+        # 차트 위에 핵심 판단 인사이트 박스 배치 (3가지 모두 표시)
+        if usage_vs_perf_data:
+            # 텍스트 추출
+            status_text = ""
+            perf_text = ""
+            comp_text = ""
+            
+            # 📈 활용 현황
+            if usage_vs_perf_data.get("current_status"):
+                text = usage_vs_perf_data["current_status"]
+                if "📈" in text:
+                    status_text = text.split(":", 1)[1].strip() if ":" in text else text.replace("📈", "").replace("활용 현황:", "").strip()
+                    if status_text and not status_text.endswith('.'):
+                        status_text += '.'
+            
+            # 🏆 실제 성과
+            if usage_vs_perf_data.get("actual_performance"):
+                text = usage_vs_perf_data["actual_performance"]
+                if "🏆" in text:
+                    perf_text = text.split(":", 1)[1].strip() if ":" in text else text.replace("🏆", "").replace("실제 성과:", "").strip()
+                    if perf_text and not perf_text.endswith('.'):
+                        perf_text += '.'
+            
+            # 📍 비교 분석
+            if usage_vs_perf_data.get("comparison_analysis"):
+                text = usage_vs_perf_data["comparison_analysis"]
+                if "📍" in text:
+                    comp_text = text.split(":", 1)[1].strip() if ":" in text else text.replace("📍", "").replace("비교 분석:", "").strip()
+                    if comp_text and not comp_text.endswith('.'):
+                        comp_text += '.'
+            
+            # 하나의 박스에 모두 표시
+            if status_text or perf_text or comp_text:
+                # HTML 문자열 직접 생성 (변수 미리 추출)
+                sm_size = FONT_SIZES["sm"]
+                base_size = FONT_SIZES["base"]
+                primary_color = BRAND_COLORS["primary"]
+                text_primary = TEXT_COLORS["primary"]
+                text_secondary = TEXT_COLORS["secondary"]
+                spacing_md = SPACING["md"]
+                spacing_lg = SPACING["lg"]
+                spacing_xl = SPACING["xl"]
+                spacing_xs = SPACING["xs"]
+                spacing_sm = SPACING["sm"]
+                
+                content_html = ""
+                
+                if status_text:
+                    content_html += f'<div style="margin-bottom: {spacing_xl};"><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📈 활용 현황</div><div style="font-size: {base_size}; font-weight: 400; color: {text_primary}; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{status_text}</div></div>'
+                
+                if perf_text:
+                    content_html += f'<div style="margin-bottom: {spacing_xl};"><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">🏆 실제 성과</div><div style="font-size: {base_size}; font-weight: 400; color: {text_primary}; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{perf_text}</div></div>'
+                
+                if comp_text:
+                    content_html += f'<div><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📍 비교 분석</div><div style="font-size: {base_size}; font-weight: 400; color: {text_primary}; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{comp_text}</div></div>'
+                
+                # st.html 사용 (Streamlit 1.28.0+)
+                try:
+                    st.html(
+                        f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl}; margin-bottom: {spacing_lg}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{content_html}</div>'
+                    )
+                except AttributeError:
+                    # st.html이 없는 경우 st.markdown 사용
+                    st.markdown(
+                        f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl}; margin-bottom: {spacing_lg}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{content_html}</div>',
+                        unsafe_allow_html=True
+                    )
+        
+        # 차트는 인사이트를 뒷받침하는 근거 역할
         plot_usage_vs_engagement(
             type_ratio,
             perf_summary,
-            selected_country
+            selected_country,
+            key_suffix="tab4"
         )
         
-        section_gap(48)
+        section_gap(40)
         
-        # 과소 활용 타입 (확대 후보)
+        # ============================================
+        # 2️⃣ 콘텐츠 유형별 전략 제안 (국가 기준)
+        # ============================================
         st.markdown(
-            """
-            <div class="section">
-                <h4 class="section-title">과소 활용 타입 (확대 후보)</h4>
-                <div class="section-desc">높은 성과를 보이지만 활용도가 낮은 타입으로, 확대를 고려할 수 있습니다.</div>
+            f"""
+            <style>
+            .strategy-section div,
+            .strategy-section *,
+            .strategy-content,
+            .strategy-content * {{
+                font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;
+            }}
+            </style>
+            <div class="section strategy-section">
+                <h4 class="section-title">콘텐츠 유형별 전략 제안</h4>
+                <div class="section-desc" style="margin-bottom: {SPACING['xl']};">선택된 국가에서, 활용 비중 대비 성과가 과대/과소 평가된 콘텐츠 유형을 기준으로 운영 전략을 제안합니다.</div>
             </div>
             """,
             unsafe_allow_html=True
         )
-        section_gap(16)
+        section_gap(24)
         
+        underused_insights = strategy_insights.get("underused_types", [])
+        overused_insights = strategy_insights.get("overused_types", [])
+        
+        # 1️⃣ 과소 활용 타입 (확대 후보)
         if len(underused) > 0:
+            st.markdown(
+                f"""
+                <div class="strategy-content" style="margin-bottom: {SPACING['xl']};">
+                    <div style="font-size: {FONT_SIZES['lg']}; font-weight: 700; color: {TEXT_COLORS['primary']}; margin-bottom: {SPACING['md']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        과소 활용 타입 (확대 후보)
+                    </div>
+                    <div style="font-size: {FONT_SIZES['base']}; color: {TEXT_COLORS['secondary']}; line-height: 1.6; margin-bottom: {SPACING['lg']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        활용 비중은 낮지만, 참여율·상위 10% 진입 확률이 높아 추가 투입 시 성과 확장이 기대되는 유형입니다.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            # 타입별 리스트
             for idx, row in underused.iterrows():
                 type_num = int(row["img_type"])
                 type_name = get_type_name(type_num)
                 usage_pct = row["usage_share"] * 100
                 eng_rate = row["eng_mean"]
-                prob_top10 = row.get("p_top10", 0) * 100
+                top10_pct = row.get("p_top10", 0) * 100
+                
+                # 해당 타입의 인사이트 찾기
+                type_insight = ""
+                for insight_text in underused_insights:
+                    if f"유형 {type_num}" in insight_text or f"Type {type_num}" in insight_text:
+                        if ":" in insight_text:
+                            type_insight = insight_text.split(":", 1)[1].strip()
+                        else:
+                            type_insight = insight_text.strip()
+                        break
+                
+                # 성과 근거 텍스트 생성
+                perf_reasons = []
+                if eng_rate > 0:
+                    perf_reasons.append(f"평균 참여율 {format_engagement_rate(eng_rate)}")
+                if top10_pct > 0:
+                    perf_reasons.append(f"Top10% 진입 확률 {top10_pct:.1f}%")
+                perf_reason_text = " / ".join(perf_reasons) if perf_reasons else "성과 데이터 없음"
                 
                 st.markdown(
                     f"""
-                    <div style="{get_bg_style('white')} border: 1px solid #E5E7EB; border-radius: 8px; padding: {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: {SPACING['md']};">
-                        <div style="{get_text_style('lg', 'primary', family='bold')} margin-bottom: {SPACING['xs']};">
-                            {type_name} (Type {type_num})
+                    <div style="border-left: 3px solid {BRAND_COLORS['primary']}; background-color: rgba(31, 87, 149, 0.03); padding: {SPACING['lg']} {SPACING['xl']}; margin-bottom: {SPACING['md']}; border-radius: {BORDER_RADIUS['sm']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        <div style="font-size: {FONT_SIZES['base']}; font-weight: 600; color: {TEXT_COLORS['primary']}; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            유형 {type_num} · {type_name}
                         </div>
-                        <div style="{get_text_style('base', 'tertiary')} margin-top: {SPACING['sm']};">
-                            활용도: {format_percentage(usage_pct)} · 참여율: {format_engagement_rate(eng_rate)} · Top 10% 확률: {prob_top10:.1f}%
+                        <div style="font-size: {FONT_SIZES['sm']}; color: {TEXT_COLORS['secondary']}; margin-bottom: {SPACING['xs']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            - 활용도: {format_percentage(usage_pct)}
+                        </div>
+                        <div style="font-size: {FONT_SIZES['sm']}; color: {TEXT_COLORS['secondary']}; margin-bottom: {SPACING['xs']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            - 성과 근거: {perf_reason_text}
+                        </div>
+                        <div style="font-size: {FONT_SIZES['sm']}; color: {TEXT_COLORS['secondary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            - 해석: {type_insight if type_insight else "활용 비중 대비 성과 효율이 높아 확장 우선 대상"}
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
-        else:
-            st.info("과소 활용 타입이 없습니다.")
         
-        section_gap(48)
+        section_gap(32)
         
-        # 과대 활용 타입 (축소/개선 후보)
-        st.markdown(
-            """
-            <div class="section">
-                <h4 class="section-title">과대 활용 타입 (축소/개선 후보)</h4>
-                <div class="section-desc">활용도는 높지만 성과가 낮은 타입으로, 축소하거나 개선을 고려할 수 있습니다.</div>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
-        section_gap(16)
-        
+        # 2️⃣ 과대 활용 타입 (축소 후보)
         if len(overused) > 0:
+            st.markdown(
+                f"""
+                <div class="strategy-content" style="margin-bottom: {SPACING['xl']}; margin-top: {SPACING['xl']};">
+                    <div style="font-size: {FONT_SIZES['lg']}; font-weight: 700; color: {TEXT_COLORS['primary']}; margin-bottom: {SPACING['md']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        과대 활용 타입 (축소 후보)
+                    </div>
+                    <div style="font-size: {FONT_SIZES['base']}; color: {TEXT_COLORS['secondary']}; line-height: 1.6; margin-bottom: {SPACING['lg']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        운영 비중은 높으나, 성과 지표가 이를 따라가지 못해 투입 대비 효율이 낮은 유형입니다.
+                    </div>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+            
+            # 타입별 리스트
             for idx, row in overused.iterrows():
                 type_num = int(row["img_type"])
                 type_name = get_type_name(type_num)
                 usage_pct = row["usage_share"] * 100
                 eng_rate = row["eng_mean"]
-                prob_top10 = row.get("p_top10", 0) * 100
+                top10_pct = row.get("p_top10", 0) * 100
+                
+                # 해당 타입의 인사이트 찾기
+                type_insight = ""
+                for insight_text in overused_insights:
+                    if f"유형 {type_num}" in insight_text or f"Type {type_num}" in insight_text or (f"유형 {type_num}," in insight_text):
+                        if ":" in insight_text:
+                            type_insight = insight_text.split(":", 1)[1].strip()
+                        else:
+                            type_insight = insight_text.strip()
+                        break
+                
+                # 성과 근거 텍스트 생성
+                perf_reasons = []
+                if top10_pct > 0:
+                    perf_reasons.append(f"Top10% 진입 확률 {top10_pct:.1f}%")
+                elif eng_rate > 0:
+                    perf_reasons.append(f"평균 참여율 {format_engagement_rate(eng_rate)}")
+                perf_reason_text = " / ".join(perf_reasons) if perf_reasons else "성과 데이터 없음"
                 
                 st.markdown(
                     f"""
-                    <div style="{get_bg_style('white')} border: 1px solid #E5E7EB; border-radius: 8px; padding: {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0,0,0,0.05); margin-bottom: {SPACING['md']};">
-                        <div style="{get_text_style('lg', 'primary', family='bold')} margin-bottom: {SPACING['xs']};">
-                            {type_name} (Type {type_num})
+                    <div style="border-left: 3px solid #D1D5DB; background-color: #F9FAFB; padding: {SPACING['lg']} {SPACING['xl']}; margin-bottom: {SPACING['md']}; border-radius: {BORDER_RADIUS['sm']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        <div style="font-size: {FONT_SIZES['base']}; font-weight: 600; color: {TEXT_COLORS['primary']}; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            유형 {type_num} · {type_name}
                         </div>
-                        <div style="{get_text_style('base', 'tertiary')} margin-top: {SPACING['sm']};">
-                            활용도: {format_percentage(usage_pct)} · 참여율: {format_engagement_rate(eng_rate)} · Top 10% 확률: {prob_top10:.1f}%
+                        <div style="font-size: {FONT_SIZES['sm']}; color: {TEXT_COLORS['secondary']}; margin-bottom: {SPACING['xs']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            - 활용도: {format_percentage(usage_pct)}
+                        </div>
+                        <div style="font-size: {FONT_SIZES['sm']}; color: {TEXT_COLORS['secondary']}; margin-bottom: {SPACING['xs']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            - 성과 근거: {perf_reason_text}
+                        </div>
+                        <div style="font-size: {FONT_SIZES['sm']}; color: {TEXT_COLORS['secondary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Arita-Dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                            - 해석: {type_insight if type_insight else "물량 대비 성과 효율이 낮아 점진적 축소 필요"}
                         </div>
                     </div>
                     """,
                     unsafe_allow_html=True
                 )
-        else:
-            st.info("과대 활용 타입이 없습니다.")
         
-        section_gap(48)
+        section_gap(40)
         
-        # Action Items
-        actions = []
+        # ============================================
+        # 3️⃣ 국가별 상세 근거 보기 (토글)
+        # ============================================
+        if underused_insights or overused_insights:
+            with st.expander("국가별 상세 근거 보기", expanded=False):
+                country_name = get_country_name(selected_country)
+                
+                if underused_insights:
+                    st.markdown(
+                        f"""
+                        <div class="strategy-content" style="margin-bottom: {SPACING['md']};">
+                            <div style="font-size: {FONT_SIZES['sm']}; font-weight: 700; color: {BRAND_COLORS['primary']}; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                                {country_name} - 과소 활용 타입 판정 근거
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                    for insight_text in underused_insights:
+                        clean_text = insight_text.strip()
+                        st.markdown(
+                            f'<div class="strategy-content" style="font-size: {FONT_SIZES["sm"]}; color: {TEXT_COLORS["secondary"]}; line-height: 1.6; margin-bottom: {SPACING["sm"]}; padding-left: {SPACING["md"]}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">• {clean_text}</div>',
+                            unsafe_allow_html=True
+                        )
+                
+                if overused_insights:
+                    st.markdown(
+                        f"""
+                        <div class="strategy-content" style="margin-top: {SPACING['lg']}; margin-bottom: {SPACING['md']};">
+                            <div style="font-size: {FONT_SIZES['sm']}; font-weight: 700; color: #6B7280; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                                {country_name} - 과대 활용 타입 판정 근거
+                            </div>
+                        </div>
+                        """,
+                        unsafe_allow_html=True
+                    )
+                    for insight_text in overused_insights:
+                        clean_text = insight_text.strip()
+                        st.markdown(
+                            f'<div class="strategy-content" style="font-size: {FONT_SIZES["sm"]}; color: {TEXT_COLORS["secondary"]}; line-height: 1.6; margin-bottom: {SPACING["sm"]}; padding-left: {SPACING["md"]}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">• {clean_text}</div>',
+                            unsafe_allow_html=True
+                        )
         
-        if kpis['underused_opportunity']['type']:
-            underused_type_name = get_type_name(kpis['underused_opportunity']['type'])
-            actions.append({
-                "action": f"{underused_type_name} (Type {kpis['underused_opportunity']['type']}) 활용도 증가",
-                "reason": f"높은 참여율({format_engagement_rate(kpis['underused_opportunity']['engagement'])})을 보이지만 현재 활용도가 {format_percentage(kpis['underused_opportunity']['usage'])}로 낮습니다."
-            })
-        
-        if len(overused) > 0:
-            overused_type = int(overused.iloc[0]["img_type"])
-            overused_type_name = get_type_name(overused_type)
-            overused_usage = overused.iloc[0]["usage_share"] * 100
-            overused_eng = overused.iloc[0]["eng_mean"]
-            actions.append({
-                "action": f"{overused_type_name} (Type {overused_type}) 활용도 감소",
-                "reason": f"활용도는 높지만({format_percentage(overused_usage)}) 참여율이 낮습니다({format_engagement_rate(overused_eng)}). 더 높은 성과를 보이는 타입으로 재배분을 고려하세요."
-            })
-        
-        type_counts = type_count.to_dict()
-        low_sample_types = [t for t, count in type_counts.items() if count < 10]
-        if low_sample_types:
-            actions.append({
-                "action": "주의사항",
-                "reason": f"Type {', '.join(map(str, low_sample_types))}는 샘플 크기가 작아(<10개 게시글) 결과의 신뢰성이 낮을 수 있습니다."
-            })
-        
-        if actions:
-            render_action_items(actions)
+        section_gap(40)
     
     section_gap(48)
+

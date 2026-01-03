@@ -142,6 +142,8 @@ def plot_usage_distribution(type_ratio, country, highlight_type=None):
         title=dict(
             x=0.5,
             xanchor="center",
+            y=0.94,
+            yanchor="top",
             font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
         ),
         xaxis=dict(
@@ -153,7 +155,7 @@ def plot_usage_distribution(type_ratio, country, highlight_type=None):
         )
     )
     
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key=f"usage_dist_{country}")
 
 def plot_engagement_distribution(df_country, country, highlight_type=None):
     """참여율 분포 (Bar Chart - 평균 참여율)"""
@@ -205,15 +207,22 @@ def plot_engagement_distribution(df_country, country, highlight_type=None):
         title=dict(
             x=0.5,
             xanchor="center",
+            y=0.94,
+            yanchor="top",
             font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
         )
     )
     
-    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False})
+    st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False}, key=f"engagement_dist_{country}")
 
-def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
+def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None, key_suffix=""):
     """활용도 vs 참여율 (Side-by-side)"""
     from components.layout import get_type_name
+    
+    # 고유 키 생성
+    key_prefix = f"usage_vs_eng_{country}"
+    if key_suffix:
+        key_prefix = f"{key_prefix}_{key_suffix}"
     
     col1, col2 = st.columns(2)
     
@@ -226,8 +235,14 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
             "Usage Share": usage_df.values
         })
         
-        # 모든 막대를 회색 계열로 통일 (데이터 비교는 중립색)
-        colors = [CHART_PALETTE[0]] * len(usage_df)
+        # Top 1을 연한 하늘색으로 강조
+        max_idx = usage_df.idxmax()
+        colors = []
+        for img_type in usage_df.index:
+            if img_type == max_idx:
+                colors.append(LIGHT_BLUE_HIGHLIGHT)  # Top 1은 연한 하늘색
+            else:
+                colors.append(DEFAULT_BAR_COLOR)  # 나머지는 #E1E4EA
         
         fig1 = px.bar(
             df_usage,
@@ -245,10 +260,12 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
             bargap=0.4,  # 막대 간격 조정
             yaxis_tickformat=".0%",
             yaxis=dict(title=None),
-            margin=dict(l=40, r=20, t=40, b=40),
+            margin=dict(l=40, r=20, t=70, b=40),  # 타이틀과 박스 사이 여백 증가
             title=dict(
                 x=0.5,
                 xanchor="center",
+                y=0.94,
+                yanchor="top",
                 font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
             ),
             xaxis=dict(
@@ -259,15 +276,21 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
                 )
             )
         )
-        st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig1, use_container_width=True, config={"displayModeBar": False}, key=f"{key_prefix}_usage")
     
     with col2:
         # Engagement Bar (perf_df에서 img_type과 eng_mean 사용)
         df_eng = perf_df[["img_type", "eng_mean"]].copy()
         df_eng["type_label"] = df_eng["img_type"].apply(str)
         
-        # 모든 막대를 회색 계열로 통일 (데이터 비교는 중립색)
-        colors = [CHART_PALETTE[0]] * len(df_eng)
+        # Top 1을 연한 하늘색으로 강조
+        max_idx = perf_df["eng_mean"].idxmax()
+        colors = []
+        for idx, row in perf_df.iterrows():
+            if idx == max_idx:
+                colors.append(LIGHT_BLUE_HIGHLIGHT)  # Top 1은 연한 하늘색
+            else:
+                colors.append(DEFAULT_BAR_COLOR)  # 나머지는 #E1E4EA
         
         fig2 = px.bar(
             df_eng,
@@ -284,10 +307,12 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
         fig2.update_layout(
             bargap=0.4,  # 막대 간격 조정
             yaxis=dict(title=None),
-            margin=dict(l=40, r=20, t=40, b=40),
+            margin=dict(l=40, r=20, t=70, b=40),  # 타이틀과 박스 사이 여백 증가
             title=dict(
                 x=0.5,
                 xanchor="center",
+                y=0.94,
+                yanchor="top",
                 font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
             ),
             xaxis=dict(
@@ -298,4 +323,4 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
                 )
             )
         )
-        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False})
+        st.plotly_chart(fig2, use_container_width=True, config={"displayModeBar": False}, key=f"{key_prefix}_engagement")
