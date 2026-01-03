@@ -70,7 +70,7 @@ def apply_chart_style(fig, highlight_type=None):
             text=existing_title if existing_title else None,
             x=0.5,
             xanchor="center",
-            font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", weight=600)
+            font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
         ) if existing_title else None,
         xaxis=dict(
             showgrid=True,
