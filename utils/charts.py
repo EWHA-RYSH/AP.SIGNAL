@@ -56,6 +56,9 @@ def get_country_name(code):
 
 def apply_chart_style(fig, highlight_type=None):
     """차트 공통 스타일 적용"""
+    # 기존 title이 있으면 유지, 없으면 None
+    existing_title = fig.layout.title.text if fig.layout.title else None
+    
     fig.update_layout(
         template=TEMPLATE,
         plot_bgcolor="white",
@@ -63,7 +66,12 @@ def apply_chart_style(fig, highlight_type=None):
         font=dict(size=12, color="#374151"),
         margin=dict(l=40, r=20, t=40, b=40),
         showlegend=False,
-        title=None,
+        title=dict(
+            text=existing_title if existing_title else None,
+            x=0.5,
+            xanchor="center",
+            font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", weight=600)
+        ) if existing_title else None,
         xaxis=dict(
             showgrid=True,
             gridcolor="#F3F4F6",
@@ -221,7 +229,7 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
             df_usage,
             x="Image Type",
             y="Usage Share",
-            labels={"Image Type": "이미지 타입", "Usage Share": "활용 비율"},
+            labels={"Image Type": "이미지 타입", "Usage Share": ""},
             title="활용 비율"
         )
         fig1.update_traces(
@@ -232,16 +240,13 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
         fig1.update_layout(
             bargap=0.4,  # 막대 간격 조정
             yaxis_tickformat=".0%",
+            yaxis=dict(title=None),
+            margin=dict(l=40, r=20, t=40, b=40),
             xaxis=dict(
                 tickangle=0,
                 title=dict(
                     font=dict(family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", size=12),
                     standoff=8
-                )
-            ),
-            yaxis=dict(
-                title=dict(
-                    font=dict(family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", size=12)
                 )
             )
         )
@@ -259,7 +264,7 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
             df_eng,
             x="type_label",
             y="eng_mean",
-            labels={"type_label": "이미지 타입", "eng_mean": "평균 참여율"},
+            labels={"type_label": "이미지 타입", "eng_mean": ""},
             title="평균 참여율"
         )
         fig2.update_traces(
@@ -269,16 +274,13 @@ def plot_usage_vs_engagement(usage_df, perf_df, country, highlight_type=None):
         fig2 = apply_chart_style(fig2)
         fig2.update_layout(
             bargap=0.4,  # 막대 간격 조정
+            yaxis=dict(title=None),
+            margin=dict(l=40, r=20, t=40, b=40),
             xaxis=dict(
                 tickangle=0,
                 title=dict(
                     font=dict(family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", size=12),
                     standoff=8
-                )
-            ),
-            yaxis=dict(
-                title=dict(
-                    font=dict(family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif", size=12)
                 )
             )
         )
