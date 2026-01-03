@@ -56,18 +56,15 @@ def get_country_name(code):
 
 def apply_chart_style(fig, highlight_type=None):
     """차트 공통 스타일 적용"""
-    # 기존 title이 있으면 유지, 없으면 None
-    existing_title = fig.layout.title.text if fig.layout.title and fig.layout.title.text else None
-    
-    # 기본 레이아웃 업데이트
-    layout_updates = {
-        "template": TEMPLATE,
-        "plot_bgcolor": "white",
-        "paper_bgcolor": "white",
-        "font": dict(size=12, color="#374151"),
-        "margin": dict(l=40, r=20, t=40, b=40),
-        "showlegend": False,
-        "xaxis": dict(
+    # 기본 레이아웃 업데이트 (title은 건드리지 않음 - 각 차트에서 설정)
+    fig.update_layout(
+        template=TEMPLATE,
+        plot_bgcolor="white",
+        paper_bgcolor="white",
+        font=dict(size=12, color="#374151"),
+        margin=dict(l=40, r=20, t=40, b=40),
+        showlegend=False,
+        xaxis=dict(
             showgrid=True,
             gridcolor="#F3F4F6",
             gridwidth=1,
@@ -77,27 +74,26 @@ def apply_chart_style(fig, highlight_type=None):
                 standoff=8
             )
         ),
-        "yaxis": dict(
+        yaxis=dict(
             showgrid=True,
             gridcolor="#F3F4F6",
             gridwidth=1,
             zeroline=False,
             title=None
         )
-    }
+    )
     
-    # title이 있으면 스타일 적용, 없으면 None
-    if existing_title:
-        layout_updates["title"] = dict(
-            text=existing_title,
-            x=0.5,
-            xanchor="center",
-            font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
+    # 기존 title이 있으면 스타일만 업데이트 (text는 유지)
+    if fig.layout.title and fig.layout.title.text:
+        existing_text = fig.layout.title.text
+        fig.update_layout(
+            title=dict(
+                text=existing_text,
+                x=0.5,
+                xanchor="center",
+                font=dict(size=17, color="#111827", family="Arita-Dotum-Medium, Arita-dotum-Medium, sans-serif")
+            )
         )
-    else:
-        layout_updates["title"] = None
-    
-    fig.update_layout(**layout_updates)
     
     # 모드바 숨김
     fig.update_layout(modebar_remove=["zoom", "pan", "select", "lasso", "autoScale", "reset"])
