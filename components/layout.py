@@ -107,16 +107,12 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
             if "<b>전략 요약</b>" in text or "<b>전략 요약</b>:" in text:
                 label = "전략 요약"
                 desc = text.replace("<b>전략 요약</b>", "").replace("<b>전략 요약</b>:", "").replace(":", "").strip()
-                bullets_html += f'''
-                <div style="margin-bottom: {SPACING["lg"]};">
-                    <div style="display: flex; align-items: flex-start; gap: {SPACING["xs"]}; margin-bottom: {SPACING["xs"]};">
-                        <span style="font-size: {FONT_SIZES["sm"]};">📌</span>
-                        <div style="{get_text_style("sm", "primary", "bold", "bold")} font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">{label}:</div>
-                    </div>
-                    <div style="padding-left: {SPACING["xl"]}; {get_text_style("sm", "secondary", "normal", "medium")} line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">{desc}</div>
-                </div>'''
+                label_style = get_text_style("base", "primary", "bold", "bold")
+                desc_style = get_text_style("base", "secondary", "normal", "medium")
+                bullets_html += '<div style="margin-bottom: ' + SPACING["lg"] + ';"><div style="display: flex; align-items: flex-start; gap: ' + SPACING["xs"] + '; margin-bottom: ' + SPACING["xs"] + ';"><span style="font-size: ' + FONT_SIZES["base"] + '; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">📌</span><div style="' + label_style + ' font-weight: 800; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">' + label + ':</div></div><div style="padding-left: ' + SPACING["xl"] + '; ' + desc_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + desc + '</div></div>'
             else:
-                bullets_html += f'<div style="margin-bottom: {SPACING["md"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{text}</div>'
+                text_style = get_text_style("md", "primary", "normal", "medium")
+                bullets_html += '<div style="margin-bottom: ' + SPACING["md"] + '; ' + text_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + text + '</div>'
         
         # 🧠 분석: 이모지 + <b>분석</b> + 설명
         elif bullet_clean.startswith("🧠"):
@@ -124,49 +120,44 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
             if "<b>분석</b>" in text:
                 label = "분석"
                 desc = text.replace("<b>분석</b>", "").replace("<b>분석</b>:", "").replace(":", "").strip()
-                bullets_html += f'''
-                <div style="margin-bottom: {SPACING["md"]};">
-                    <div style="display: flex; align-items: flex-start; gap: {SPACING["xs"]}; margin-bottom: {SPACING["xs"]};">
-                        <span style="font-size: {FONT_SIZES["sm"]};">🧠</span>
-                        <div style="{get_text_style("sm", "primary", "bold", "bold")} font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">{label}</div>
-                    </div>
-                    <div style="padding-left: {SPACING["xl"]}; {get_text_style("sm", "secondary", "normal", "medium")} line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">{desc}</div>
-                </div>'''
+                label_style = get_text_style("base", "primary", "bold", "bold")
+                desc_style = get_text_style("base", "secondary", "normal", "medium")
+                bullets_html += '<div style="margin-bottom: 0;"><div style="display: flex; align-items: flex-start; gap: ' + SPACING["xs"] + '; margin-bottom: ' + SPACING["xs"] + ';"><span style="font-size: ' + FONT_SIZES["base"] + '; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">🧠</span><div style="' + label_style + ' font-weight: 800; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">' + label + '</div></div><div style="padding-left: ' + SPACING["xl"] + '; ' + desc_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + desc + '</div></div>'
             else:
-                bullets_html += f'<div style="margin-bottom: {SPACING["lg"]}; {get_text_style("md", "primary", "normal", "medium")} line-height: 1.6;">{text}</div>'
+                text_style = get_text_style("md", "primary", "normal", "medium")
+                bullets_html += '<div style="margin-bottom: ' + SPACING["lg"] + '; ' + text_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + text + '</div>'
         
         # 👉로 시작: 요약 문장 (볼드 적용)
         elif bullet_clean.startswith("👉"):
-            bullets_html += f'<div style="margin-bottom: {SPACING["md"]}; {get_text_style("md", "primary", family="bold")} line-height: 1.6;">{bullet}</div>'
+            text_style = get_text_style("md", "primary", family="bold")
+            bullets_html += '<div style="margin-bottom: ' + SPACING["md"] + '; ' + text_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + bullet + '</div>'
         
         # 🔎로 시작: 분석 항목 (볼드 해제)
         elif "🔎" in bullet:
             # <b> 태그 제거하고 일반 스타일 적용
             bullet_text = bullet.replace("<b>", "").replace("</b>", "")
-            bullets_html += f'<div style="margin-bottom: {SPACING["sm"]}; {get_text_style("md", "secondary", "normal", "medium")} line-height: 1.6;">{bullet_text}</div>'
+            text_style = get_text_style("md", "secondary", "normal", "medium")
+            bullets_html += '<div style="margin-bottom: ' + SPACING["sm"] + '; ' + text_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + bullet_text + '</div>'
         
         # 기타: 기본 스타일
         else:
-            bullets_html += f'<div style="margin-bottom: {SPACING["sm"]}; {get_text_style("md", "secondary", "normal", "medium")} line-height: 1.6;">{bullet}</div>'
+            text_style = get_text_style("md", "secondary", "normal", "medium")
+            bullets_html += '<div style="margin-bottom: ' + SPACING["sm"] + '; ' + text_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + bullet + '</div>'
     
     title_html = ""
     if title:
-        title_html = f'<div style="{get_text_style("xl", "primary", family="bold")} margin-bottom: {SPACING["lg"]}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{title}</div>'
+        # 제목 크기를 더 키움 (base -> md), 간격도 넓힘, 폰트 굵기를 한 단계 더 높임 (800 -> 900)
+        title_html = '<div style="font-size: ' + FONT_SIZES["md"] + '; font-weight: 900; color: ' + BRAND_COLORS["primary"] + '; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: ' + SPACING["md"] + '; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">' + title + '</div>'
     
-    # HTML 구성 (왼쪽 라인: 연한 회색, 두께 2px)
-    html_content = f'''<div style="{get_bg_style("white")} {get_border_style("default")} border-left: 2px solid {BORDER_COLORS["light"]}; border-radius: {BORDER_RADIUS["sm"]}; padding: {SPACING["xl"]} {SPACING["2xl"]}; margin: {SPACING["xl"]} 0; box-shadow: 0 1px 2px rgba(0,0,0,0.05); {get_text_style("md", "primary", "normal", "medium")}">
-{title_html}
-<div style="margin: 0; {get_text_style("md", "primary", "normal", "medium")}">
-{bullets_html}
-</div>
-</div>'''
+    # HTML 구성 (패턴 요약과 같은 스타일: 파란색 배경, 파란색 왼쪽 테두리)
+    # 폰트를 더 강력하게 적용하기 위해 CSS 스타일 태그 추가
+    css_style = '<style>.insight-container, .insight-container *, .insight-container span, .insight-container div { font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important; }</style>'
+    container_style = "background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid " + BRAND_COLORS["primary"] + "; border-radius: " + BORDER_RADIUS["sm"] + "; padding: " + SPACING["lg"] + " " + SPACING["xl"] + "; margin: " + SPACING["xl"] + " 0; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;"
+    inner_style = "margin: 0; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;"
+    html_content = css_style + '<div class="insight-container" style="' + container_style + '">' + title_html + '<div style="' + inner_style + '">' + bullets_html + '</div></div>'
     
-    # st.html 사용 (Streamlit 1.28.0+)
-    try:
-        st.html(html_content)
-    except AttributeError:
-        # st.html이 없는 경우 st.markdown 사용
-        st.markdown(html_content, unsafe_allow_html=True)
+    # st.markdown 사용 (st.html이 HTML을 텍스트로 표시하는 문제 해결)
+    st.markdown(html_content, unsafe_allow_html=True)
 
 def render_action_items(items):
     items_html = "".join([

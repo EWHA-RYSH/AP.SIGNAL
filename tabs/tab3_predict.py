@@ -33,6 +33,15 @@ def render(df_ref):
     
     st.markdown("---")
     
+    # 컬럼 높이 맞추기를 위한 CSS
+    st.markdown("""
+        <style>
+        .stColumn:first-child > div {
+            min-height: 400px;
+        }
+        </style>
+    """, unsafe_allow_html=True)
+    
     col1, col2 = st.columns([1, 1.5])
     
     with col1:
@@ -105,7 +114,7 @@ def render(df_ref):
                 # st.html이 없는 경우 st.markdown 사용
                 st.markdown(result_html, unsafe_allow_html=True)
         else:
-            placeholder_html = """
+            placeholder_html = f"""
             <div style="
                 background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
                 border: 1px solid #BAE6FD;
@@ -113,16 +122,17 @@ def render(df_ref):
                 padding: 48px 32px;
                 text-align: center;
                 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+                min-height: 400px;
+                display: flex;
+                flex-direction: column;
+                justify-content: center;
+                align-items: center;
             ">
                 <div style="font-size: {FONT_SIZES['6xl']}; margin-bottom: {SPACING['lg']}; opacity: 0.6;">
                     📸
                 </div>
-                <div style="{get_text_style('lg', weight='semibold')} color: #0C4A6E; margin-bottom: {SPACING['sm']};">
-                    이미지를 업로드해주세요
-                </div>
-                <div style="{get_text_style('base')} color: #075985; line-height: 1.6;">
-                    콘텐츠 성과를 예측하기 위해<br>
-                    이미지를 업로드하면 예측 결과가 표시됩니다.
+                <div style="{get_text_style('lg', 'primary', weight='semibold')} color: #0C4A6E; line-height: 1.6;">
+                    이미지를 업로드하면 콘텐츠 성과 예측 결과가 표시됩니다.
                 </div>
             </div>
             """

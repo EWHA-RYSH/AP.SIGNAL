@@ -1251,25 +1251,17 @@ def render():
                 content_html = ""
                 
                 if status_text:
-                    content_html += f'<div style="margin-bottom: {spacing_xl};"><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📈 활용 현황</div><div style="font-size: {base_size}; font-weight: 400; color: {text_primary}; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{status_text}</div></div>'
+                    content_html += '<div style="margin-bottom: ' + spacing_xl + ';"><div style="font-size: ' + sm_size + '; font-weight: 700; color: ' + primary_color + '; margin-bottom: ' + spacing_sm + '; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📈 활용 현황</div><div style="font-size: ' + base_size + '; font-weight: 400; color: ' + text_primary + '; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + status_text + '</div></div>'
                 
                 if perf_text:
-                    content_html += f'<div style="margin-bottom: {spacing_xl};"><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">🏆 실제 성과</div><div style="font-size: {base_size}; font-weight: 400; color: {text_primary}; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{perf_text}</div></div>'
+                    content_html += '<div style="margin-bottom: ' + spacing_xl + ';"><div style="font-size: ' + sm_size + '; font-weight: 700; color: ' + primary_color + '; margin-bottom: ' + spacing_sm + '; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">🏆 실제 성과</div><div style="font-size: ' + base_size + '; font-weight: 400; color: ' + text_primary + '; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + perf_text + '</div></div>'
                 
                 if comp_text:
-                    content_html += f'<div><div style="font-size: {sm_size}; font-weight: 700; color: {primary_color}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📍 비교 분석</div><div style="font-size: {base_size}; font-weight: 400; color: {text_primary}; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{comp_text}</div></div>'
+                    content_html += '<div><div style="font-size: ' + sm_size + '; font-weight: 700; color: ' + primary_color + '; margin-bottom: ' + spacing_sm + '; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📍 비교 분석</div><div style="font-size: ' + base_size + '; font-weight: 400; color: ' + text_primary + '; line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + comp_text + '</div></div>'
                 
-                # st.html 사용 (Streamlit 1.28.0+)
-                try:
-                    st.html(
-                        f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl}; margin-bottom: {spacing_lg}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{content_html}</div>'
-                    )
-                except AttributeError:
-                    # st.html이 없는 경우 st.markdown 사용
-                    st.markdown(
-                        f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl}; margin-bottom: {spacing_lg}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">{content_html}</div>',
-                        unsafe_allow_html=True
-                    )
+                # st.markdown 사용 (st.html이 HTML을 텍스트로 표시하는 문제 해결)
+                box_html = '<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid ' + primary_color + '; padding: ' + spacing_lg + ' ' + spacing_xl + '; margin-bottom: ' + spacing_lg + '; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + content_html + '</div>'
+                st.markdown(box_html, unsafe_allow_html=True)
         
         # 차트는 인사이트를 뒷받침하는 근거 역할
         plot_usage_vs_engagement(
