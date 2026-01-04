@@ -34,6 +34,91 @@ def render(df_ref):
     
     st.markdown("---")
     
+    # 컬럼 레이아웃을 위한 CSS/JavaScript - 페이지 상단에 배치
+    st.markdown("""
+        <style>
+        .stColumns {
+            display: flex !important;
+            flex-direction: row !important;
+            width: 100% !important;
+            gap: 1rem !important;
+        }
+        .stColumns > div {
+            display: flex !important;
+            flex-direction: column !important;
+            width: auto !important;
+            max-width: none !important;
+            flex-shrink: 1 !important;
+        }
+        .stColumns > div:first-child {
+            flex: 1 1 0% !important;
+            min-width: 0 !important;
+        }
+        .stColumns > div:last-child {
+            flex: 1.5 1 0% !important;
+            min-width: 0 !important;
+        }
+        [data-testid="column"] {
+            width: auto !important;
+            max-width: none !important;
+            flex: 1 1 0% !important;
+        }
+        [data-testid="column"]:first-child {
+            flex: 1 1 0% !important;
+        }
+        [data-testid="column"]:last-child {
+            flex: 1.5 1 0% !important;
+        }
+        [data-testid="column"] > div {
+            width: auto !important;
+            max-width: none !important;
+        }
+        div[data-testid="stImage"] img {
+            width: 100% !important;
+            height: auto !important;
+            object-fit: contain !important;
+        }
+        </style>
+        <script>
+        (function() {
+            function fixColumns() {
+                const cols = document.querySelectorAll('.stColumns');
+                cols.forEach(col => {
+                    if (col.style.display !== 'flex') {
+                        col.style.setProperty('display', 'flex', 'important');
+                        col.style.setProperty('flex-direction', 'row', 'important');
+                        col.style.setProperty('width', '100%', 'important');
+                        col.style.setProperty('gap', '1rem', 'important');
+                    }
+                    const divs = col.children;
+                    for (let i = 0; i < divs.length; i++) {
+                        const d = divs[i];
+                        d.style.setProperty('display', 'flex', 'important');
+                        d.style.setProperty('flex-direction', 'column', 'important');
+                        d.style.setProperty('width', 'auto', 'important');
+                        d.style.setProperty('max-width', 'none', 'important');
+                        d.style.setProperty('flex', i === 0 ? '1 1 0%' : '1.5 1 0%', 'important');
+                    }
+                });
+                const columnEls = document.querySelectorAll('[data-testid="column"]');
+                columnEls.forEach((el, i) => {
+                    el.style.setProperty('width', 'auto', 'important');
+                    el.style.setProperty('max-width', 'none', 'important');
+                    el.style.setProperty('flex', i === 0 ? '1 1 0%' : '1.5 1 0%', 'important');
+                });
+            }
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', fixColumns);
+            } else {
+                fixColumns();
+            }
+            const observer = new MutationObserver(fixColumns);
+            observer.observe(document.body, { childList: true, subtree: true });
+            setInterval(fixColumns, 100);
+        })();
+        </script>
+    """, unsafe_allow_html=True)
+    
     # 파일 업로더는 먼저 렌더링
     uploaded = st.file_uploader(
         "이미지 업로드",
@@ -43,85 +128,6 @@ def render(df_ref):
     
     if uploaded:
         image = Image.open(uploaded).convert("RGB")
-        
-        # 컬럼 레이아웃을 위한 강력한 CSS
-        st.markdown("""
-            <style>
-            /* 컬럼이 가로로 배치되도록 강제 - 모든 선택자 사용 */
-            div[data-testid="column-container"],
-            .stColumns,
-            div[data-baseweb="block"] > div[data-testid="column-container"] {
-                display: flex !important;
-                flex-direction: row !important;
-                width: 100% !important;
-                gap: 1rem !important;
-            }
-            div[data-testid="column-container"] > div,
-            .stColumns > div,
-            div[data-baseweb="block"] > div[data-testid="column-container"] > div {
-                display: flex !important;
-                flex-direction: column !important;
-                width: auto !important;
-                max-width: none !important;
-                flex-shrink: 1 !important;
-            }
-            div[data-testid="column-container"] > div:first-child,
-            .stColumns > div:first-child {
-                flex: 1 1 0% !important;
-                min-width: 0 !important;
-            }
-            div[data-testid="column-container"] > div:last-child,
-            .stColumns > div:last-child {
-                flex: 1.5 1 0% !important;
-                min-width: 0 !important;
-            }
-            [data-testid="column"] {
-                width: auto !important;
-                max-width: none !important;
-                flex: 1 1 0% !important;
-            }
-            [data-testid="column"]:first-child {
-                flex: 1 1 0% !important;
-            }
-            [data-testid="column"]:last-child {
-                flex: 1.5 1 0% !important;
-            }
-            [data-testid="column"] > div {
-                width: auto !important;
-                max-width: none !important;
-            }
-            div[data-testid="stImage"] img {
-                width: 100% !important;
-                height: auto !important;
-                object-fit: contain !important;
-            }
-            </style>
-            <script>
-            (function() {
-                function forceLayout() {
-                    const containers = document.querySelectorAll('[data-testid="column-container"], .stColumns');
-                    containers.forEach(container => {
-                        container.style.cssText = 'display: flex !important; flex-direction: row !important; width: 100% !important; gap: 1rem !important;';
-                        const divs = container.querySelectorAll(':scope > div');
-                        divs.forEach((d, i) => {
-                            d.style.cssText = 'display: flex !important; flex-direction: column !important; width: auto !important; max-width: none !important; flex: ' + (i === 0 ? '1 1 0%' : '1.5 1 0%') + ' !important;';
-                        });
-                    });
-                    document.querySelectorAll('[data-testid="column"]').forEach((el, i) => {
-                        el.style.cssText = 'width: auto !important; max-width: none !important; flex: ' + (i === 0 ? '1 1 0%' : '1.5 1 0%') + ' !important;';
-                    });
-                }
-                if (document.readyState === 'loading') {
-                    document.addEventListener('DOMContentLoaded', forceLayout);
-                } else {
-                    forceLayout();
-                }
-                const obs = new MutationObserver(forceLayout);
-                obs.observe(document.body, { childList: true, subtree: true });
-                setInterval(forceLayout, 200);
-            })();
-            </script>
-        """, unsafe_allow_html=True)
         
         col1, col2 = st.columns([1, 1.5])
         
@@ -147,61 +153,44 @@ def render(df_ref):
             type_name = TYPE_DESC.get(img_type, f"Type {img_type}")
             level, _ = performance_level(percent)
             
-            # 예측 결과 카드 - Streamlit 네이티브 컴포넌트 사용
+            # 예측 결과 카드 - 스타일을 변수로 먼저 할당
             bg_color = '#DCFCE7' if percent >= 80 else '#FEF9C3' if percent >= 50 else '#FEE2E2'
             text_color = '#166534' if percent >= 80 else '#854D0E' if percent >= 50 else '#991B1B'
             
-            # 카드 컨테이너
-            st.markdown(f"""
-                <div style="
-                    {get_bg_style('white')} 
-                    {get_border_style('default')} 
-                    border-radius: {BORDER_RADIUS['lg']}; 
-                    padding: {SPACING['2xl']}; 
-                    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-                ">
-            """, unsafe_allow_html=True)
-            
-            # 예측 성과 제목
+            # 스타일 함수 호출을 변수로 할당
+            card_bg = get_bg_style('white')
+            card_border = get_border_style('default')
             title_style = get_text_style('md', 'tertiary')
-            st.markdown(f'<div style="{title_style} margin-bottom: {SPACING["sm"]};">예측 성과</div>', unsafe_allow_html=True)
-            
-            # 퍼센트 표시
             percent_style = get_text_style('5xl', 'primary', family='bold')
-            st.markdown(f'<div style="{percent_style} margin-bottom: {SPACING["md"]};">{percent:.1f}%</div>', unsafe_allow_html=True)
+            badge_style = get_text_style('sm', weight='semibold')
+            label_style = get_text_style('base', 'tertiary')
+            value_style = get_text_style('lg', 'primary', weight='semibold')
+            desc_style = get_text_style('base', 'tertiary')
             
-            # 레벨 배지
-            st.markdown(f"""
-                <div style="
-                    display: inline-block; 
-                    padding: {SPACING['xs']} {SPACING['md']}; 
-                    border-radius: {BORDER_RADIUS['sm']}; 
-                    background-color: {bg_color}; 
-                    color: {text_color}; 
-                    {get_text_style('sm', weight='semibold')} 
-                    margin-bottom: {SPACING['lg']};
-                ">{level}</div>
-            """, unsafe_allow_html=True)
+            # 모든 내용을 하나의 HTML 블록으로 구성
+            result_html = (
+                f'<div style="{card_bg} {card_border} border-radius: {BORDER_RADIUS["lg"]}; '
+                f'padding: {SPACING["2xl"]}; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">'
+                f'<div style="{title_style} margin-bottom: {SPACING["sm"]};">예측 성과</div>'
+                f'<div style="{percent_style} margin-bottom: {SPACING["md"]};">{percent:.1f}%</div>'
+                f'<div style="display: inline-block; padding: {SPACING["xs"]} {SPACING["md"]}; '
+                f'border-radius: {BORDER_RADIUS["sm"]}; background-color: {bg_color}; '
+                f'color: {text_color}; {badge_style} margin-bottom: {SPACING["lg"]};">{level}</div>'
+                f'<div style="border-top: 1px solid #E5E7EB; padding-top: {SPACING["lg"]}; '
+                f'margin-top: {SPACING["lg"]};">'
+                f'<div style="{label_style} margin-bottom: {SPACING["xs"]};">이미지 타입</div>'
+                f'<div style="{value_style} margin-bottom: {SPACING["lg"]};">Type {img_type} · {type_name}</div>'
+                f'<div style="{desc_style} line-height: 1.6;">'
+                f'이 이미지는 <strong>{selected_country}</strong> 시장 내 전체 콘텐츠 대비 '
+                f'<strong>{level}</strong> 수준의 상대적 성과 위치에 해당합니다.</div>'
+                f'</div></div>'
+            )
             
-            # 구분선
-            st.markdown(f'<div style="border-top: 1px solid #E5E7EB; padding-top: {SPACING["lg"]}; margin-top: {SPACING["lg"]};"></div>', unsafe_allow_html=True)
-            
-            # 이미지 타입
-            type_label_style = get_text_style('base', 'tertiary')
-            type_value_style = get_text_style('lg', 'primary', weight='semibold')
-            st.markdown(f'<div style="{type_label_style} margin-bottom: {SPACING["xs"]};">이미지 타입</div>', unsafe_allow_html=True)
-            st.markdown(f'<div style="{type_value_style} margin-bottom: {SPACING["lg"]};">Type {img_type} · {type_name}</div>', unsafe_allow_html=True)
-            
-            # 설명 텍스트
-            st.markdown(f"""
-                <div style="{get_text_style('base', 'tertiary')} line-height: 1.6;">
-                    이 이미지는 <strong>{selected_country}</strong> 시장 내 전체 콘텐츠 대비 
-                    <strong>{level}</strong> 수준의 상대적 성과 위치에 해당합니다.
-                </div>
-            """, unsafe_allow_html=True)
-            
-            # 카드 닫기
-            st.markdown('</div>', unsafe_allow_html=True)
+            # st.html을 먼저 시도하고, 없으면 st.markdown 사용
+            try:
+                st.html(result_html)
+            except (AttributeError, Exception):
+                st.markdown(result_html, unsafe_allow_html=True)
     else:
         # 이미지가 없을 때 플레이스홀더
         st.markdown(f"""
