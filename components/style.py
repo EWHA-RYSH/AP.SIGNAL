@@ -481,14 +481,22 @@ def inject_style():
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
-            overflow: hidden !important;
+            overflow: visible !important;
         }}
         
         .stColumns > div {{
             width: 100% !important;
             max-width: 100% !important;
             box-sizing: border-box !important;
-            overflow: hidden !important;
+            overflow: visible !important;
+        }}
+        
+        [data-testid="column"] {{
+            overflow: visible !important;
+        }}
+        
+        [data-testid="column"] > div {{
+            overflow: visible !important;
         }}
         
         [data-testid="stSidebar"] {{
