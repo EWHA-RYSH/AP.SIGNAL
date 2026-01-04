@@ -762,11 +762,11 @@ def render():
                 if content_html:
                     try:
                         st.html(
-                            f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl} {spacing_md} {spacing_xl}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;"><div style="font-size: {base_size}; font-weight: 700; color: {primary_color}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {spacing_xs}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📊 패턴 요약</div>{content_html}</div>'
+                            f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;"><div style="font-size: {base_size}; font-weight: 700; color: {primary_color}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {spacing_xs}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📊 패턴 요약</div>{content_html}</div>'
                         )
                     except AttributeError:
                         st.markdown(
-                            f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl} {spacing_md} {spacing_xl}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;"><div style="font-size: {base_size}; font-weight: 700; color: {primary_color}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {spacing_xs}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📊 패턴 요약</div>{content_html}</div>',
+                            f'<div style="background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid {primary_color}; padding: {spacing_lg} {spacing_xl}; margin-bottom: {spacing_sm}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;"><div style="font-size: {base_size}; font-weight: 700; color: {primary_color}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {spacing_xs}; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">📊 패턴 요약</div>{content_html}</div>',
                             unsafe_allow_html=True
                         )
         
@@ -1123,76 +1123,97 @@ def render():
             current_status = country_summary.get("current_status", "")
             performance_core = country_summary.get("performance_core", "")
             
-            # 한 줄 결론 추출 (인사이트에서)
+            # 짧은 판단 문구 추출 
             conclusion = insight.replace("인사이트:", "").strip() if "인사이트:" in insight else insight.strip()
             
-            # 현재 운영 요약 추출 (숫자 추출용)
+            # 현재 운영에서 데이터 추출
             current_ops = current_status.replace("현황:", "").strip() if "현황:" in current_status else current_status.strip()
+            # 47% 추출
+            usage_percent_match = re.search(r'(\d+(?:\.\d+)?%)', current_ops)
+            usage_percent = usage_percent_match.group(1) if usage_percent_match else ""
+            # "제품 중심(유형 1·2)" 또는 유사한 텍스트 추출
+            type_info_match = re.search(r'(제품 중심|유형\s*\d+(?:·\d+)?)', current_ops)
+            type_info = type_info_match.group(1) if type_info_match else current_ops.split()[0] if current_ops else ""
+            # 유형 번호 추출
+            type_numbers_match = re.search(r'유형\s*(\d+(?:·\d+)?)', current_ops)
+            if type_numbers_match:
+                type_info = f"제품 중심(유형 {type_numbers_match.group(1)})"
+            # 전체 설명 텍스트 (간략화)
+            if len(current_ops) > 30:
+                current_ops_summary = current_ops[:30] + "..."
+            else:
+                current_ops_summary = current_ops
             
-            # 성과 핵심 요약 추출 (숫자 추출용)
+            # 성과 핵심에서 데이터 추출
             perf_key = performance_core.replace("성과 핵심:", "").strip() if "성과 핵심:" in performance_core else performance_core.strip()
+            # "1.5~2배" 또는 "1.8×" 추출
+            multiplier_match = re.search(r'(\d+(?:\.\d+)?~?\d*(?:\.\d+)?[배×])', perf_key)
+            multiplier = multiplier_match.group(1) if multiplier_match else ""
+            # "유형 4" 추출
+            type_match = re.search(r'유형\s*(\d+)', perf_key)
+            type_num = f"유형 {type_match.group(1)}" if type_match else "유형 4"
+            # 전체 설명 텍스트 (간략화)
+            if len(perf_key) > 30:
+                perf_key_summary = perf_key[:30] + "..."
+            else:
+                perf_key_summary = perf_key
             
-            # 숫자 강조를 위한 정규식으로 숫자 추출 및 강조 처리
-            # 현재 운영에서 숫자 찾기 (예: "47%", "유형 1·2")
-            current_ops_highlighted = current_ops
-            # 숫자와 % 패턴 찾아서 강조
-            current_ops_highlighted = re.sub(
-                r'(\d+(?:\.\d+)?%)', 
-                f'<span style="color: {BRAND_COLORS["primary"]}; font-weight: 700;">\\1</span>', 
-                current_ops_highlighted
-            )
-            # 유형 번호 강조
-            current_ops_highlighted = re.sub(
-                r'(유형\s*\d+(?:·\d+)?)', 
-                f'<span style="color: {BRAND_COLORS["primary"]}; font-weight: 600;">\\1</span>', 
-                current_ops_highlighted
-            )
-            
-            # 성과 핵심에서 숫자 찾기 (예: "1.5~2배", "유형 4")
-            perf_key_highlighted = perf_key
-            # 배수 패턴 강조
-            perf_key_highlighted = re.sub(
-                r'(\d+(?:\.\d+)?~?\d*(?:\.\d+)?배)', 
-                f'<span style="color: {BRAND_COLORS["primary"]}; font-weight: 700;">\\1</span>', 
-                perf_key_highlighted
-            )
-            # 유형 번호 강조
-            perf_key_highlighted = re.sub(
-                r'(유형\s*\d+)', 
-                f'<span style="color: {BRAND_COLORS["primary"]}; font-weight: 600;">\\1</span>', 
-                perf_key_highlighted
-            )
-            
-            # HTML 문자열 생성 (정규식으로 생성한 HTML이 제대로 렌더링되도록)
-            html_content = f"""
-            <div class="comprehensive-insight" style="margin-top: 0; margin-bottom: {SPACING['md']};">
-                <div style="background-color: {BG_COLORS['white']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['xl']} {SPACING['xl']}; border: 1px solid {BORDER_COLORS['default']}; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);">
-                    <div style="font-size: {FONT_SIZES['lg']}; font-weight: 700; color: {TEXT_COLORS['primary']}; line-height: 1.7; word-break: keep-all; margin-bottom: {SPACING['lg']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
-                        {conclusion}
-                    </div>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: {SPACING['xl']}; padding-top: {SPACING['md']}; border-top: 1px solid {BORDER_COLORS['lighter']};">
-                        <div>
-                            <div style="font-size: {FONT_SIZES['xs']}; font-weight: 600; color: {TEXT_COLORS['secondary']}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {SPACING['xs']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
-                                현재 운영
-                            </div>
-                            <div style="font-size: {FONT_SIZES['base']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
-                                {current_ops_highlighted}
-                            </div>
-                        </div>
-                        <div>
-                            <div style="font-size: {FONT_SIZES['xs']}; font-weight: 600; color: {TEXT_COLORS['secondary']}; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: {SPACING['xs']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
-                                핵심 성과
-                            </div>
-                            <div style="font-size: {FONT_SIZES['base']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.6; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
-                                {perf_key_highlighted}
-                            </div>
-                        </div>
-                    </div>
+            # Insight Scorecard HTML 생성
+            # 1. 짧은 판단 문구 (먼저 렌더링) - 이모지 추가
+            judgment_html = f"""
+            <div style="margin-top: {SPACING['md']}; margin-bottom: {SPACING['sm']};">
+                <div style="font-size: {FONT_SIZES['lg']}; font-weight: 600; color: {TEXT_COLORS['primary']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                    📍 {conclusion}
                 </div>
             </div>
             """
+            try:
+                st.html(judgment_html)
+            except AttributeError:
+                st.markdown(judgment_html, unsafe_allow_html=True)
             
-            st.markdown(html_content, unsafe_allow_html=True)
+            # 2. KPI 카드 2개 (가로 배치)
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                # 카드 1: 현황
+                card1_html = f"""
+                <div style="background-color: {BG_COLORS['white']}; border: 1px solid {BORDER_COLORS['default']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['lg']} {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                    <div style="font-size: {FONT_SIZES['sm']}; font-weight: 600; color: {TEXT_COLORS['secondary']}; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        📊 현황
+                    </div>
+                    <div style="font-size: {FONT_SIZES['2xl']}; font-weight: 700; color: {BRAND_COLORS['primary']}; margin-bottom: {SPACING['xs']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                        {usage_percent if usage_percent else "—"}
+                    </div>
+                    <div style="font-size: {FONT_SIZES['base']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.5; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        {current_ops_summary if current_ops_summary else type_info if type_info else ""}
+                    </div>
+                </div>
+                """
+                try:
+                    st.html(card1_html)
+                except AttributeError:
+                    st.markdown(card1_html, unsafe_allow_html=True)
+            
+            with col2:
+                # 카드 2: 성과 핵심
+                card2_html = f"""
+                <div style="background-color: {BG_COLORS['white']}; border: 1px solid {BORDER_COLORS['default']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['lg']} {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                    <div style="font-size: {FONT_SIZES['sm']}; font-weight: 600; color: {TEXT_COLORS['secondary']}; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        🎯 성과 핵심
+                    </div>
+                    <div style="font-size: {FONT_SIZES['2xl']}; font-weight: 700; color: {BRAND_COLORS['primary']}; margin-bottom: {SPACING['xs']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                        {multiplier if multiplier else "—"}
+                    </div>
+                    <div style="font-size: {FONT_SIZES['base']}; font-weight: 400; color: {TEXT_COLORS['primary']}; line-height: 1.5; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                        {perf_key_summary if perf_key_summary else f"{type_num} 반응률"}
+                    </div>
+                </div>
+                """
+                try:
+                    st.html(card2_html)
+                except AttributeError:
+                    st.markdown(card2_html, unsafe_allow_html=True)
         
         section_gap(32)
         
@@ -1321,7 +1342,7 @@ def render():
             st.markdown(
                 f"""
                 <div class="strategy-content" style="margin-bottom: {SPACING['xl']};">
-                    <div style="font-size: {FONT_SIZES['lg']}; font-weight: 900; color: {TEXT_COLORS['primary']}; margin-bottom: {SPACING['md']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                    <div style="font-size: {FONT_SIZES['lg']}; font-weight: 900; color: {TEXT_COLORS['primary']}; margin-bottom: {SPACING['md']}; text-shadow: 0.3px 0 0 currentColor; letter-spacing: -0.2px; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
                         과소 활용 타입
                     </div>
                     <div style="font-size: {FONT_SIZES['base']}; color: {TEXT_COLORS['secondary']}; line-height: 1.6; margin-bottom: {SPACING['lg']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
@@ -1385,7 +1406,7 @@ def render():
             st.markdown(
                 f"""
                 <div class="strategy-content" style="margin-bottom: {SPACING['xl']}; margin-top: {SPACING['xl']};">
-                    <div style="font-size: {FONT_SIZES['lg']}; font-weight: 900; color: {TEXT_COLORS['primary']}; margin-bottom: {SPACING['md']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                    <div style="font-size: {FONT_SIZES['lg']}; font-weight: 900; color: {TEXT_COLORS['primary']}; margin-bottom: {SPACING['md']}; text-shadow: 0.3px 0 0 currentColor; letter-spacing: -0.2px; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
                         과대 활용 타입
                     </div>
                     <div style="font-size: {FONT_SIZES['base']}; color: {TEXT_COLORS['secondary']}; line-height: 1.6; margin-bottom: {SPACING['lg']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
@@ -1454,9 +1475,9 @@ def render():
                 if underused_insights:
                     st.markdown(
                         f"""
-                        <div class="strategy-content" style="margin-bottom: {SPACING['sm']};">
-                            <div style="font-size: {FONT_SIZES['sm']}; font-weight: 700; color: {BRAND_COLORS['primary']}; margin-bottom: {SPACING['xs']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
-                                과소 활용 타입 판정 근거
+                        <div class="strategy-content" style="margin-bottom: {SPACING['md']};">
+                            <div style="font-size: {FONT_SIZES['sm']}; font-weight: 700; color: {BRAND_COLORS['primary']}; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                                {country_name} - 과소 활용 타입 판정 근거
                             </div>
                         </div>
                         """,
@@ -1465,16 +1486,16 @@ def render():
                     for insight_text in underused_insights:
                         clean_text = insight_text.strip()
                         st.markdown(
-                            f'<div class="strategy-content" style="font-size: {FONT_SIZES["sm"]}; color: {TEXT_COLORS["secondary"]}; line-height: 1.4; margin-bottom: {SPACING["xs"]}; padding-left: {SPACING["md"]}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">• {clean_text}</div>',
+                            f'<div class="strategy-content" style="font-size: {FONT_SIZES["sm"]}; color: {TEXT_COLORS["secondary"]}; line-height: 1.6; margin-bottom: {SPACING["sm"]}; padding-left: {SPACING["md"]}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">• {clean_text}</div>',
                             unsafe_allow_html=True
                         )
                 
                 if overused_insights:
                     st.markdown(
                         f"""
-                        <div class="strategy-content" style="margin-top: {SPACING['lg']}; margin-bottom: {SPACING['sm']};">
-                            <div style="font-size: {FONT_SIZES['sm']}; font-weight: 700; color: {BRAND_COLORS['primary']}; margin-bottom: {SPACING['xs']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
-                                과대 활용 타입 판정 근거
+                        <div class="strategy-content" style="margin-top: {SPACING['lg']}; margin-bottom: {SPACING['md']};">
+                            <div style="font-size: {FONT_SIZES['sm']}; font-weight: 700; color: #6B7280; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Bold', 'Arita-Dotum-Medium', 'Arita-dotum-Medium', sans-serif !important;">
+                                {country_name} - 과대 활용 타입 판정 근거
                             </div>
                         </div>
                         """,
@@ -1483,7 +1504,7 @@ def render():
                     for insight_text in overused_insights:
                         clean_text = insight_text.strip()
                         st.markdown(
-                            f'<div class="strategy-content" style="font-size: {FONT_SIZES["sm"]}; color: {TEXT_COLORS["secondary"]}; line-height: 1.4; margin-bottom: {SPACING["xs"]}; padding-left: {SPACING["md"]}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">• {clean_text}</div>',
+                            f'<div class="strategy-content" style="font-size: {FONT_SIZES["sm"]}; color: {TEXT_COLORS["secondary"]}; line-height: 1.6; margin-bottom: {SPACING["sm"]}; padding-left: {SPACING["md"]}; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">• {clean_text}</div>',
                             unsafe_allow_html=True
                         )
         
