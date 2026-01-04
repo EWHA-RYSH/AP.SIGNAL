@@ -34,19 +34,23 @@ def render(df_ref):
     
     st.markdown("---")
     
-    # 컬럼 높이 맞추기 및 이미지 크기 조정을 위한 CSS + JavaScript
-    # style.py의 전역 스타일을 오버라이드하여 컬럼이 가로로 배치되도록 강제
+    # 파일 업로더는 먼저 렌더링
+    uploaded = st.file_uploader(
+        "이미지 업로드",
+        type=["jpg", "jpeg", "png"],
+        help="성과를 예측할 이미지를 업로드하세요"
+    )
+    
+    # 컬럼 레이아웃을 위한 CSS
     st.markdown("""
         <style>
-        /* 컬럼 컨테이너 - 가로 배치 강제 */
+        /* 컬럼이 가로로 배치되도록 강제 */
         .stColumns {
             display: flex !important;
             flex-direction: row !important;
             width: 100% !important;
             gap: 1rem !important;
         }
-        
-        /* 각 컬럼 - style.py의 width: 100% 오버라이드 */
         .stColumns > div {
             display: flex !important;
             flex-direction: column !important;
@@ -54,47 +58,29 @@ def render(df_ref):
             max-width: none !important;
             flex-shrink: 1 !important;
         }
-        
-        /* 첫 번째 컬럼 (이미지 업로드) - 1:1.5 비율 */
         .stColumns > div:first-child {
             flex: 1 1 0% !important;
             min-width: 0 !important;
-            width: auto !important;
-            max-width: none !important;
         }
-        
-        /* 두 번째 컬럼 (결과 표시) - 1:1.5 비율 */
         .stColumns > div:last-child {
             flex: 1.5 1 0% !important;
             min-width: 0 !important;
-            width: auto !important;
-            max-width: none !important;
         }
-        
-        /* 개별 컬럼 요소 - style.py의 width: 100% 오버라이드 */
         [data-testid="column"] {
             width: auto !important;
             max-width: none !important;
             flex: 1 1 0% !important;
         }
-        
         [data-testid="column"]:first-child {
             flex: 1 1 0% !important;
         }
-        
         [data-testid="column"]:last-child {
             flex: 1.5 1 0% !important;
         }
-        
         [data-testid="column"] > div {
             width: auto !important;
             max-width: none !important;
         }
-        
-        .stColumn:first-child > div {
-            min-height: 400px;
-        }
-        
         div[data-testid="stImage"] img {
             width: 100% !important;
             height: auto !important;
@@ -102,75 +88,39 @@ def render(df_ref):
         }
         </style>
         <script>
-        // 동적으로 컬럼 스타일 강제 적용 (배포 환경 대응)
-        function fixColumnsLayout() {
-            const columns = document.querySelectorAll('.stColumns');
-            columns.forEach(col => {
+        function fixLayout() {
+            const cols = document.querySelectorAll('.stColumns');
+            cols.forEach(col => {
                 col.style.display = 'flex';
                 col.style.flexDirection = 'row';
-                col.style.width = '100%';
-                col.style.gap = '1rem';
-                
-                const columnDivs = col.querySelectorAll(':scope > div');
-                columnDivs.forEach((div, index) => {
-                    div.style.display = 'flex';
-                    div.style.flexDirection = 'column';
-                    div.style.width = 'auto';
-                    div.style.maxWidth = 'none';
-                    if (index === 0) {
-                        div.style.flex = '1 1 0%';
-                    } else {
-                        div.style.flex = '1.5 1 0%';
-                    }
+                const divs = col.querySelectorAll(':scope > div');
+                divs.forEach((d, i) => {
+                    d.style.width = 'auto';
+                    d.style.maxWidth = 'none';
+                    d.style.flex = i === 0 ? '1 1 0%' : '1.5 1 0%';
                 });
             });
-            
-            const columnElements = document.querySelectorAll('[data-testid="column"]');
-            columnElements.forEach((el, index) => {
+            document.querySelectorAll('[data-testid="column"]').forEach((el, i) => {
                 el.style.width = 'auto';
                 el.style.maxWidth = 'none';
-                if (index === 0) {
-                    el.style.flex = '1 1 0%';
-                } else {
-                    el.style.flex = '1.5 1 0%';
-                }
-                
-                const innerDiv = el.querySelector(':scope > div');
-                if (innerDiv) {
-                    innerDiv.style.width = 'auto';
-                    innerDiv.style.maxWidth = 'none';
-                }
+                el.style.flex = i === 0 ? '1 1 0%' : '1.5 1 0%';
             });
         }
-        
-        // 페이지 로드 시 실행
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', fixColumnsLayout);
+            document.addEventListener('DOMContentLoaded', fixLayout);
         } else {
-            fixColumnsLayout();
+            fixLayout();
         }
-        
-        // Streamlit의 동적 업데이트 대응
-        const observer = new MutationObserver(fixColumnsLayout);
-        observer.observe(document.body, { childList: true, subtree: true });
-        
-        // 주기적으로도 체크 (배포 환경 대응)
-        setInterval(fixColumnsLayout, 500);
+        new MutationObserver(fixLayout).observe(document.body, { childList: true, subtree: true });
+        setInterval(fixLayout, 300);
         </script>
     """, unsafe_allow_html=True)
     
     col1, col2 = st.columns([1, 1.5])
     
     with col1:
-        uploaded = st.file_uploader(
-            "이미지 업로드",
-            type=["jpg", "jpeg", "png"],
-            help="성과를 예측할 이미지를 업로드하세요"
-        )
-        
         if uploaded:
             image = Image.open(uploaded).convert("RGB")
-            # use_container_width는 배포 환경에서 지원되지 않을 수 있으므로 제거
             st.image(np.array(image))
     
     with col2:
@@ -225,12 +175,8 @@ def render(df_ref):
             </div>
             """
             
-            # st.html 사용 (Streamlit 1.28.0+)
-            try:
-                st.html(result_html)
-            except AttributeError:
-                # st.html이 없는 경우 st.markdown 사용
-                st.markdown(result_html, unsafe_allow_html=True)
+            # st.markdown으로 HTML 렌더링 (배포 환경 호환성)
+            st.markdown(result_html, unsafe_allow_html=True)
         else:
             placeholder_html = f"""
             <div style="
@@ -255,9 +201,5 @@ def render(df_ref):
             </div>
             """
             
-            # st.html 사용 (Streamlit 1.28.0+)
-            try:
-                st.html(placeholder_html)
-            except AttributeError:
-                # st.html이 없는 경우 st.markdown 사용
-                st.markdown(placeholder_html, unsafe_allow_html=True)
+            # st.markdown으로 HTML 렌더링 (배포 환경 호환성)
+            st.markdown(placeholder_html, unsafe_allow_html=True)
