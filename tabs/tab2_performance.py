@@ -1178,7 +1178,7 @@ def render():
             with col1:
                 # 카드 1: 현황
                 card1_html = f"""
-                <div style="background-color: {BG_COLORS['white']}; border: 1px solid {BORDER_COLORS['default']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['lg']} {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                <div style="background-color: {BG_COLORS['white']}; border: 1px solid {BORDER_COLORS['default']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['lg']} {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important; overflow: visible; min-height: auto;">
                     <div style="font-size: {FONT_SIZES['sm']}; font-weight: 600; color: {TEXT_COLORS['secondary']}; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
                         📊 현황
                     </div>
@@ -1198,7 +1198,7 @@ def render():
             with col2:
                 # 카드 2: 성과 핵심
                 card2_html = f"""
-                <div style="background-color: {BG_COLORS['white']}; border: 1px solid {BORDER_COLORS['default']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['lg']} {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
+                <div style="background-color: {BG_COLORS['white']}; border: 1px solid {BORDER_COLORS['default']}; border-radius: {BORDER_RADIUS['sm']}; padding: {SPACING['lg']} {SPACING['xl']}; box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05); font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important; overflow: visible; min-height: auto;">
                     <div style="font-size: {FONT_SIZES['sm']}; font-weight: 600; color: {TEXT_COLORS['secondary']}; margin-bottom: {SPACING['sm']}; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;">
                         🎯 성과 핵심
                     </div>
