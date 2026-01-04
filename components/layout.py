@@ -107,9 +107,9 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
             if "<b>전략 요약</b>" in text or "<b>전략 요약</b>:" in text:
                 label = "전략 요약"
                 desc = text.replace("<b>전략 요약</b>", "").replace("<b>전략 요약</b>:", "").replace(":", "").strip()
-                label_style = get_text_style("base", "primary", "bold", "bold")
-                desc_style = get_text_style("base", "secondary", "normal", "medium")
-                bullets_html += '<div style="margin-bottom: ' + SPACING["lg"] + ';"><div style="display: flex; align-items: flex-start; gap: ' + SPACING["xs"] + '; margin-bottom: ' + SPACING["xs"] + ';"><span style="font-size: ' + FONT_SIZES["base"] + '; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">📌</span><div style="' + label_style + ' font-weight: 800; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">' + label + ':</div></div><div style="padding-left: ' + SPACING["xl"] + '; ' + desc_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + desc + '</div></div>'
+                label_style = get_text_style("md", "primary", "bold", "bold")
+                desc_style = get_text_style("md", "secondary", "normal", "medium")
+                bullets_html += '<div style="margin-bottom: ' + SPACING["lg"] + ';"><div style="display: flex; align-items: flex-start; gap: ' + SPACING["xs"] + '; margin-bottom: ' + SPACING["xs"] + ';"><span style="font-size: ' + FONT_SIZES["md"] + '; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">📌</span><div style="' + label_style + ' font-weight: 800; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">' + label + ':</div></div><div style="padding-left: ' + SPACING["xl"] + '; ' + desc_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + desc + '</div></div>'
             else:
                 text_style = get_text_style("md", "primary", "normal", "medium")
                 bullets_html += '<div style="margin-bottom: ' + SPACING["md"] + '; ' + text_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + text + '</div>'
@@ -120,9 +120,9 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
             if "<b>분석</b>" in text:
                 label = "분석"
                 desc = text.replace("<b>분석</b>", "").replace("<b>분석</b>:", "").replace(":", "").strip()
-                label_style = get_text_style("base", "primary", "bold", "bold")
-                desc_style = get_text_style("base", "secondary", "normal", "medium")
-                bullets_html += '<div style="margin-bottom: 0;"><div style="display: flex; align-items: flex-start; gap: ' + SPACING["xs"] + '; margin-bottom: ' + SPACING["xs"] + ';"><span style="font-size: ' + FONT_SIZES["base"] + '; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">🧠</span><div style="' + label_style + ' font-weight: 800; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">' + label + '</div></div><div style="padding-left: ' + SPACING["xl"] + '; ' + desc_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + desc + '</div></div>'
+                label_style = get_text_style("md", "primary", "bold", "bold")
+                desc_style = get_text_style("md", "secondary", "normal", "medium")
+                bullets_html += '<div style="margin-bottom: 0;"><div style="display: flex; align-items: flex-start; gap: ' + SPACING["xs"] + '; margin-bottom: ' + SPACING["xs"] + ';"><span style="font-size: ' + FONT_SIZES["md"] + '; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">🧠</span><div style="' + label_style + ' font-weight: 800; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">' + label + '</div></div><div style="padding-left: ' + SPACING["xl"] + '; ' + desc_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + desc + '</div></div>'
             else:
                 text_style = get_text_style("md", "primary", "normal", "medium")
                 bullets_html += '<div style="margin-bottom: ' + SPACING["lg"] + '; ' + text_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + text + '</div>'
@@ -144,17 +144,18 @@ def render_insight_bullets(bullets: list[str], title: Optional[str] = None):
             text_style = get_text_style("md", "secondary", "normal", "medium")
             bullets_html += '<div style="margin-bottom: ' + SPACING["sm"] + '; ' + text_style + ' line-height: 1.6; font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important;">' + bullet + '</div>'
     
-    title_html = ""
+    # 제목을 박스 밖으로 빼기 (참여율 분포, 활용 분포처럼)
     if title:
-        # 제목 크기를 더 키움 (base -> md), 간격도 넓힘, 폰트 굵기를 한 단계 더 높임 (800 -> 900)
-        title_html = '<div style="font-size: ' + FONT_SIZES["md"] + '; font-weight: 900; color: ' + BRAND_COLORS["primary"] + '; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: ' + SPACING["md"] + '; font-family: \'Arita-Dotum-Bold\', \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', sans-serif !important;">' + title + '</div>'
+        # 제목을 먼저 렌더링 (박스 밖) - section-title 클래스 사용하여 동일한 스타일 적용
+        title_html = '<div class="section"><h4 class="section-title">' + title + '</h4></div>'
+        st.markdown(title_html, unsafe_allow_html=True)
     
     # HTML 구성 (패턴 요약과 같은 스타일: 파란색 배경, 파란색 왼쪽 테두리)
     # 폰트를 더 강력하게 적용하기 위해 CSS 스타일 태그 추가
     css_style = '<style>.insight-container, .insight-container *, .insight-container span, .insight-container div { font-family: \'Arita-Dotum-Medium\', \'Arita-dotum-Medium\', \'Malgun Gothic\', sans-serif !important; }</style>'
-    container_style = "background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid " + BRAND_COLORS["primary"] + "; border-radius: " + BORDER_RADIUS["sm"] + "; padding: " + SPACING["lg"] + " " + SPACING["xl"] + "; margin: " + SPACING["xl"] + " 0; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;"
+    container_style = "background-color: rgba(31, 87, 149, 0.06); border-left: 4px solid " + BRAND_COLORS["primary"] + "; border-radius: " + BORDER_RADIUS["sm"] + "; padding: " + SPACING["lg"] + " " + SPACING["xl"] + "; margin: 0 0 " + SPACING["xl"] + " 0; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;"
     inner_style = "margin: 0; font-family: 'Arita-Dotum-Medium', 'Arita-dotum-Medium', 'Malgun Gothic', sans-serif !important;"
-    html_content = css_style + '<div class="insight-container" style="' + container_style + '">' + title_html + '<div style="' + inner_style + '">' + bullets_html + '</div></div>'
+    html_content = css_style + '<div class="insight-container" style="' + container_style + '"><div style="' + inner_style + '">' + bullets_html + '</div></div>'
     
     # st.markdown 사용 (st.html이 HTML을 텍스트로 표시하는 문제 해결)
     st.markdown(html_content, unsafe_allow_html=True)
