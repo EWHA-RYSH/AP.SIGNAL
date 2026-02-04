@@ -90,7 +90,15 @@ def format_engagement_rate(value):
     """참여율 포맷팅"""
     if pd.isna(value) or value == 0:
         return "N/A"
-    return f"{value:.4f}"
+    # 결과물고도화.xlsx에서는 engagement(= likes+comments) "점수"가 들어올 수 있어
+    # 1 이상이면 정수/콤마 포맷으로 표시하고, 1 미만이면 기존처럼 소수 4자리로 표시합니다.
+    try:
+        v = float(value)
+    except Exception:
+        return "N/A"
+    if v >= 1:
+        return f"{v:,.0f}"
+    return f"{v:.4f}"
 
 def format_percentage(value):
     """퍼센트 포맷팅"""

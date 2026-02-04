@@ -32,7 +32,11 @@ def preprocess_country_data(df, country):
     # 숫자형 변환
     df_country["likes"] = pd.to_numeric(df_country["likes"], errors="coerce").fillna(0)
     df_country["comments"] = pd.to_numeric(df_country["comments"], errors="coerce").fillna(0)
-    df_country["followers"] = pd.to_numeric(df_country["followers"], errors="coerce").replace(0, np.nan)
+    if "followers" in df_country.columns:
+        df_country["followers"] = pd.to_numeric(df_country["followers"], errors="coerce").replace(0, np.nan)
+    else:
+        # 결과물고도화.xlsx 등 followers가 없는 스키마 대응
+        df_country["followers"] = np.nan
     
     # 파생 지표
     if "eng_rate" not in df_country.columns or df_country["eng_rate"].isna().all():
